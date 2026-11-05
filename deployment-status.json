@@ -2,9 +2,9 @@
   "commit": "4a85d27e2d5a7669bfc6bfac0d536822c2524df9",
   "runId": "41955568011",
   "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/41955568011",
-  "createdAt": "2026-11-05T02:30:40.393638+00:00",
+  "createdAt": "2026-11-05T02:31:42.615862+00:00",
   "build": "success",
-  "deployment": "pending",
+  "deployment": "failure",
   "supabase": {
     "tokenPresent": true,
     "schemaApplied": true,
@@ -14,8 +14,45 @@
     "stage": "complete",
     "error": null
   },
-  "pages": {},
-  "live": {},
+  "pages": {
+    "httpStatus": 200,
+    "buildType": "workflow",
+    "configured": true,
+    "cname": "mr1streetsp.com.br",
+    "httpsEnforced": false,
+    "certificateState": null,
+    "status": null,
+    "defaultProbe": {
+      "url": "https://fslrv.github.io/demo-repository/",
+      "addresses": [
+        "185.199.108.153",
+        "185.199.109.153",
+        "185.199.110.153",
+        "185.199.111.153",
+        "2606:50c0:8000::153",
+        "2606:50c0:8001::153",
+        "2606:50c0:8002::153",
+        "2606:50c0:8003::153"
+      ],
+      "error": "URLError"
+    },
+    "httpsProbe": {
+      "url": "https://mr1streetsp.com.br/",
+      "error": "gaierror"
+    },
+    "httpProbe": {
+      "url": "http://mr1streetsp.com.br/",
+      "error": "gaierror"
+    },
+    "domainHealthStatus": 403
+  },
+  "live": {
+    "live": false,
+    "catalogRead": false,
+    "settingsRead": false,
+    "privateOrdersBlocked": false,
+    "error": "O site ainda n\u00e3o respondeu com a vers\u00e3o publicada."
+  },
   "databaseChecks": {
     "ready": true,
     "catalogRead": true,
@@ -23,5 +60,5 @@
     "privateTablesBlocked": true,
     "authAvailable": true
   },
-  "url": ""
+  "url": "http://mr1streetsp.com.br/"
 }
