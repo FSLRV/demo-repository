@@ -21,6 +21,7 @@ result={
     'build':os.environ['BUILD_RESULT'], 'deployment':os.environ['DEPLOY_RESULT'],
     'supabase':{key:provision[key] for key in safe_fields if key in provision},
     'pages':data('PAGES_PREFLIGHT'), 'live':data('LIVE_REPORT'),
+    'databaseChecks':data('SUPABASE_READINESS'),
     'url':os.environ.get('PAGES_URL','')
 }
 (Path(os.environ['RUNNER_TEMP'])/'mr1-deployment-status.json').write_text(json.dumps(result,indent=2)+'\n')
