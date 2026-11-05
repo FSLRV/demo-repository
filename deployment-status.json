@@ -1,10 +1,10 @@
 {
-  "commit": "b9509cb4bbeab5ce844870080930ca1d2da89fa2",
-  "runId": "41953396981",
-  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/41953396981",
-  "createdAt": "2026-11-05T02:10:53.912177+00:00",
+  "commit": "90c17cd1b9a1706a7885a168a6230051d78d8ec8",
+  "runId": "41953831709",
+  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/41953831709",
+  "createdAt": "2026-11-05T02:14:30.509575+00:00",
   "build": "success",
-  "deployment": "failure",
+  "deployment": "pending",
   "supabase": {
     "tokenPresent": true,
     "schemaApplied": true,
@@ -14,10 +14,14 @@
     "stage": "complete",
     "error": null
   },
-  "pages": {
-    "httpStatus": 404,
-    "configured": false
-  },
+  "pages": {},
   "live": {},
+  "databaseChecks": {
+    "ready": true,
+    "catalogRead": true,
+    "settingsRead": true,
+    "privateTablesBlocked": true,
+    "authAvailable": true
+  },
   "url": ""
 }
