@@ -52,6 +52,17 @@ try:
                     result['registration']={'httpStatus':error.code}
                 except Exception as error:
                     result['registration']={'error':type(error).__name__}
+                try:
+                    availability=Request('https://registro.br/v2/ajax/avail/raw/'+domain,
+                                         headers={'User-Agent':'MR1-deployment-check','Accept':'application/json'})
+                    with urlopen(availability,timeout=15) as response:
+                        answer=json.load(response)
+                        fields=('status','status_cooked','fqdn','fqdn_cooked','domain','available','isAvailable','canRegister','msg','message','reason')
+                        result['availability']={'httpStatus':response.status,**{key:answer[key] for key in fields if key in answer and isinstance(answer[key],(str,int,bool))}}
+                except HTTPError as error:
+                    result['availability']={'httpStatus':error.code}
+                except Exception as error:
+                    result['availability']={'error':type(error).__name__}
         # The owner explicitly chose this domain. Enforce HTTPS only once the
         # certificate already permits a verified HTTPS connection to it.
         if domain=='mr1streetsp.com.br' and not data.get('https_enforced') and result.get('httpsProbe',{}).get('httpStatus'):
