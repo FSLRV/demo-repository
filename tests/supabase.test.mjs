@@ -91,3 +91,22 @@ test('Uploads são permitidos apenas ao administrador em seu diretório', async 
   await assert.rejects(asRole('authenticated',admin,c=>c.query("insert into storage.objects(bucket_id,name) values('mr1-media',$1)",[admin+'/file.svg'])),/row-level security/);
   await assert.rejects(asRole('authenticated',admin,c=>c.query("insert into storage.objects(bucket_id,name) values('mr1-media',$1)",[alice+'/file.png'])),/row-level security/);
 });
+
+test('Bootstrap só autoriza o e-mail escolhido após confirmação e não permite reivindicação por clientes', async () => {
+  await assert.rejects(asRole('authenticated',alice,c=>c.query('select public.mr1_claim_owner($1)',[alice])),/permission denied/);
+  await assert.rejects(asRole('authenticated',alice,c=>c.query('select * from public.mr1_owner_bootstrap')),/permission denied/);
+  await db.query('begin');
+  try {
+    await db.query('delete from public.mr1_admins');
+    await db.query("insert into public.mr1_owner_bootstrap(id,email_sha256) values('owner',encode(sha256(convert_to('owner-new@example.test','UTF8')),'hex'))");
+    const id='44444444-4444-4444-8444-444444444444';
+    await db.query("insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values($1,'owner-new@example.test',null,'{\"role\":\"admin\"}')",[id]);
+    assert.equal((await db.query('select count(*)::int as count from public.mr1_admins')).rows[0].count,0);
+    assert.equal((await db.query('select public.mr1_claim_owner($1) as claimed',[alice])).rows[0].claimed,false);
+    assert.equal((await db.query('select public.mr1_claim_owner($1) as claimed',[id])).rows[0].claimed,false);
+    await db.query('update auth.users set email_confirmed_at=now() where id=$1',[id]);
+    assert.equal((await db.query('select user_id from public.mr1_admins')).rows[0].user_id,id);
+    assert.equal((await db.query('select public.mr1_claim_owner($1) as claimed',[id])).rows[0].claimed,false);
+    assert.ok((await db.query("select claimed_at from public.mr1_owner_bootstrap where id='owner'")).rows[0].claimed_at);
+  } finally { await db.query('rollback'); }
+});

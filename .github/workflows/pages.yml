@@ -15,6 +15,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      supabase_report: ${{ steps.supabase.outputs.report }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,14 +25,11 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Apply Supabase schema when authorized
+        id: supabase
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
-            python3 scripts/provision-supabase.py --skip-admin
-          else
-            echo "Supabase management authorization not configured; publishing existing public config."
-          fi
+          MR1_BOOTSTRAP_ADMIN_SHA256: 4d8b7b65401db391b2a6f5a5f4eabe5aa42a8307d6bf726d66d874592697240d
+        run: python3 scripts/run-provision-ci.py
       - name: Build public files
         env:
           SUPABASE_URL: ${{ vars.SUPABASE_URL }}
@@ -39,17 +38,46 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
-  deploy:
+  report-build:
+    if: ${{ always() }}
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare build status
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: pending
+          SUPABASE_REPORT: ${{ needs.build.outputs.supabase_report }}
+        run: python3 scripts/deployment-report.py
+      - name: Save build status
+        run: bash scripts/save-deployment-status.sh
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.publish.outputs.page_url }}
+      preflight: ${{ steps.preflight.outputs.report }}
+      live_report: ${{ steps.live.outputs.report }}
+      setup_result: ${{ steps.pages.outcome }}
+    permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.publish.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+      - name: Inspect Pages configuration
+        id: preflight
+        env:
+          PAGES_TOKEN: ${{ secrets.PAGES_ADMIN_TOKEN || github.token }}
+        run: python3 scripts/pages-preflight.py
       - name: Configure Pages
+        id: pages
         uses: actions/configure-pages@v5
         with:
           token: ${{ secrets.PAGES_ADMIN_TOKEN || github.token }}
@@ -57,3 +85,27 @@ jobs:
       - name: Publish
         id: publish
         uses: actions/deploy-pages@v4
+      - name: Verify live storefront
+        id: live
+        env:
+          PAGES_URL: ${{ steps.publish.outputs.page_url }}
+        run: python3 scripts/verify-live.py
+  report:
+    if: ${{ always() }}
+    needs: [build, deploy, report-build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare safe deployment report
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SUPABASE_REPORT: ${{ needs.build.outputs.supabase_report }}
+          PAGES_PREFLIGHT: ${{ needs.deploy.outputs.preflight }}
+          LIVE_REPORT: ${{ needs.deploy.outputs.live_report }}
+          PAGES_URL: ${{ needs.deploy.outputs.page_url }}
+        run: python3 scripts/deployment-report.py
+      - name: Save deployment status in its own branch
+        run: bash scripts/save-deployment-status.sh

@@ -11,10 +11,19 @@ from pathlib import Path
 import re
 import secrets
 import sys
+from urllib.parse import urlparse
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
+REPORT = {'tokenPresent': False, 'schemaApplied': False, 'authConfigured': False,
+          'publicConfigReady': False, 'ownerReady': False, 'stage': 'preflight', 'error': None}
+
+
+def write_report():
+    destination = os.environ.get('MR1_PROVISION_REPORT')
+    if destination:
+        Path(destination).write_text(json.dumps(REPORT))
 
 
 def request(url, token, payload=None, method=None, api_key=None):
@@ -28,6 +37,14 @@ def request(url, token, payload=None, method=None, api_key=None):
             raw = response.read()
             return json.loads(raw) if raw else None
     except HTTPError as error:
+        REPORT['httpStatus'] = error.code
+        REPORT['endpoint'] = urlparse(url).path.rsplit('/', 1)[-1]
+        # Report only SQLSTATE, never response bodies, keys, query values or PII.
+        if REPORT['endpoint'] == 'query':
+            raw = error.read(16384).decode('utf-8', errors='replace')
+            state = re.search(r'\bERROR:\s*([0-9A-Z]{5}):', raw)
+            if state:
+                REPORT['sqlState'] = state[1]
         raise RuntimeError(f'A operação Supabase foi recusada (HTTP {error.code}); nenhuma credencial foi exibida.') from None
     except (URLError, TimeoutError):
         raise RuntimeError('Não foi possível acessar o Supabase. Confira a autorização e os domínios permitidos.') from None
@@ -45,6 +62,7 @@ def main():
     parser.add_argument('--skip-admin', action='store_true')
     parser.add_argument('--existing-admin-only', action='store_true')
     parser.add_argument('--credentials-dir', default='/workspace/private-access')
+    parser.add_argument('--bootstrap-admin-hash', default=os.environ.get('MR1_BOOTSTRAP_ADMIN_SHA256', ''))
     args = parser.parse_args()
     if not re.fullmatch(r'[a-z0-9]{20}', args.project_ref):
         parser.error('Project ref inválido.')
@@ -53,6 +71,7 @@ def main():
     if not args.skip_admin and not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', args.admin_email):
         parser.error('Informe --admin-email com o e-mail do responsável.')
     token = os.environ.get('SUPABASE_ACCESS_TOKEN', '')
+    REPORT['tokenPresent'] = bool(token)
     if not token:
         parser.error('Adicione SUPABASE_ACCESS_TOKEN nas configurações seguras do ambiente. Não envie tokens no chat.')
     base = f'https://api.supabase.com/v1/projects/{args.project_ref}'
@@ -64,17 +83,22 @@ def main():
     for migration in sorted((ROOT / 'supabase/migrations').glob('*.sql')):
         if migration.stem in applied:
             continue
+        REPORT['stage'] = 'migration:' + migration.name
         sql = "begin; select pg_advisory_xact_lock(hashtext('mr1-schema'));\n" + migration.read_text() + '\n'
         sql += 'insert into public.mr1_schema_migrations(version) values (' + literal(migration.stem) + ') on conflict do nothing; commit;'
         query(sql)
         print('Migração aplicada:', migration.name)
+    REPORT['schemaApplied'] = True
 
+    REPORT['stage'] = 'auth-configuration'
     auth = request(base + '/config/auth', token)
     redirects = {s.strip() for s in str(auth.get('uri_allow_list', '')).split(',') if s.strip()}
     redirects.add(args.site_url)
     request(base + '/config/auth', token, {'site_url': args.site_url, 'uri_allow_list': ','.join(sorted(redirects)),
                                           'external_email_enabled': True, 'mailer_autoconfirm': False,
                                           'password_min_length': 12}, 'PATCH')
+    REPORT['authConfigured'] = True
+    REPORT['stage'] = 'public-configuration'
     keys = request(base + '/api-keys', token)
     public_key = next((k['api_key'] for k in keys if k.get('name') == 'anon'), None)
     if not public_key:
@@ -87,6 +111,18 @@ def main():
     public_config = {'supabaseUrl': f'https://{args.project_ref}.supabase.co', 'supabasePublishableKey': public_key}
     (ROOT / 'config.js').write_text('// Apenas configuração pública; RLS protege os dados.\nwindow.MR1_CONFIG = Object.freeze(' + json.dumps(public_config) + ');\n')
     print('Configuração pública salva em config.js; valores de credenciais administrativas não foram publicados.')
+    REPORT['publicConfigReady'] = True
+
+    if args.bootstrap_admin_hash:
+        if not re.fullmatch(r'[a-f0-9]{64}', args.bootstrap_admin_hash):
+            raise RuntimeError('Digest do administrador inválido.')
+        REPORT['stage'] = 'verified-owner-bootstrap'
+        query("insert into public.mr1_owner_bootstrap(id,email_sha256) values ('owner'," + literal(args.bootstrap_admin_hash) + ") on conflict (id) do nothing;")
+        query("select public.mr1_claim_owner(id) from auth.users where email_confirmed_at is not null and encode(sha256(convert_to(lower(trim(email)),'UTF8')),'hex')=" + literal(args.bootstrap_admin_hash) + ';')
+        owner = query("select exists(select 1 from public.mr1_admins a join auth.users u on u.id=a.user_id where encode(sha256(convert_to(lower(trim(u.email)),'UTF8')),'hex')=" + literal(args.bootstrap_admin_hash) + ') as ready;')
+        REPORT['ownerReady'] = bool(owner and owner[0]['ready'])
+        print('Autorização administrativa preparada: somente a conta confirmada do responsável poderá reivindicá-la.')
+    REPORT['stage'] = 'complete'
 
     if not args.skip_admin:
         matches = query('select id, email_confirmed_at is not null as confirmed from auth.users where lower(email)=' + literal(args.admin_email.lower()) + ';')
@@ -127,5 +163,8 @@ if __name__ == '__main__':
     try:
         main()
     except RuntimeError as error:
+        REPORT['error'] = str(error)
         print(str(error), file=sys.stderr)
         sys.exit(1)
+    finally:
+        write_report()

@@ -31,6 +31,8 @@ Enquanto faltar a chave pública, a página mostra o catálogo de prévia e info
 
 Clientes usam **Minha conta** no cabeçalho para criar conta, entrar, guardar favoritos e ver seus pedidos. A confirmação de cadastro depende do Auth/SMTP configurado no projeto Supabase. Não há senhas padrão.
 
+A publicação prepara a autorização do e-mail administrativo informado pelo responsável. O banco guarda apenas seu digest: essa conta recebe a permissão uma única vez, após confirmar o e-mail pelo Supabase. Cadastro de outro endereço, metadados de perfil ou e-mail não confirmado não concedem acesso ao painel.
+
 Para autorizar uma conta já criada e com e-mail confirmado, execute o workflow **Authorize existing MR1 administrator**, informando o e-mail. Ele usa o secret `SUPABASE_ACCESS_TOKEN` e concede a permissão somente à conta confirmada. Não vincula privilégios a um e-mail não verificado e não permite que clientes se promovam.
 
 Em **Gerenciar loja**, o administrador pode:
@@ -86,3 +88,5 @@ O usuário informou utilizar outros provedores de pagamento e frete, mas ainda n
 As peças, valores, estoque e medidas iniciais são exemplos. As imagens MR1 geradas e as demais fontes estão em `assets/SOURCES.md`. Confira o catálogo e as medidas reais das peças embaladas antes de ativar vendas. A origem de envio informada é **05879-450**.
 
 A implementação Python/SQLite anterior foi preservada no repositório como referência, com testes em `npm run test:legacy`; ela não é publicada nem usada pelo Pages. Credenciais e dados privados locais não são transferidos ao GitHub.
+
+O workflow registra um resumo sem credenciais na branch `mr1-deployment-status`, em `deployment-status.json`. O relatório informa o resultado do banco, do Pages e da verificação da loja publicada. Nenhum token, senha ou conteúdo privado de pedidos entra nesse arquivo.
