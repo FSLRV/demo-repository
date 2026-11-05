@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "brandName": "MR1 streetwear",
+    "logoUrl": "assets/logo-navy.svg",
+    "logoLightUrl": "assets/logo-ice.svg",
+    "heroImage": "assets/hero-branded.jpg",
+    "announcementText": "STREETWEAR SEM RÓTULOS. FEITO PARA O SEU CORRE.",
+    "heroEyebrow": "NOVA COLEÇÃO",
+    "heroTitleLine1": "SEU ESTILO.",
+    "heroTitleLine2": "SUAS",
+    "heroTitleAccent": "REGRAS.",
+    "heroDescription": "Da rua para o seu dia a dia. Peças que vestem atitude e deixam você ser quem é.",
+    "heroButtonText": "ENCONTRE SEU ESTILO",
+    "manifestoEyebrow": "MUITO ALÉM DO QUE VOCÊ VESTE",
+    "manifestoTitleLine1": "A RUA É DE TODOS.",
+    "manifestoTitleLine2": "O ESTILO É",
+    "manifestoTitleAccent": "SEU.",
+    "manifestoText": "Uma marca para quem cria o próprio caminho. Nascemos da cultura urbana e acreditamos que a melhor tendência é se sentir à vontade para ser você.",
+    "footerText": "SEU ESTILO. SUAS REGRAS.\nSTREETWEAR INDEPENDENTE.",
+    "contactEmail": "",
+    "instagramUrl": "",
+    "primaryColor": "#142B49",
+    "accentColor": "#88765B",
+    "backgroundColor": "#F4F7F8"
+  }
+}

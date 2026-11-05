@@ -1,0 +1,18 @@
+project_id = "mr1-streetwear"
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[auth]
+enabled = true
+site_url = "https://fslrv.github.io/demo-repository/"
+additional_redirect_urls = ["https://fslrv.github.io/demo-repository/", "http://localhost:8000/", "http://127.0.0.1:8000/"]
+minimum_password_length = 12
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+[functions.store-api]
+verify_jwt = true

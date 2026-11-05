@@ -1,9 +1,25 @@
 {
-  "name": "demo-repo",
-  "version": "0.2.0",
-  "description": "A sample package.json",
-  "dependencies": {
-    "@primer/css": "17.0.1"
+  "name": "mr1-streetwear",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Loja MR1 streetwear com catálogo, gestão protegida, pedidos e integrações de pagamento e frete",
+  "scripts": {
+    "start": "npm run build && python3 -m http.server 8000 --bind 127.0.0.1 --directory _site",
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "test": "node tests/pages.test.mjs",
+    "test:database": "node --test tests/supabase.test.mjs",
+    "test:ui": "node tests/storefront.cjs",
+    "test:legacy": "python3 -m unittest discover -s tests -v"
   },
-  "license": "MIT"
+  "dependencies": {
+    "@primer/css": "17.0.1",
+    "@supabase/supabase-js": "2.119.0"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "pg": "8.23.1",
+    "playwright": "1.64.1"
+  }
 }

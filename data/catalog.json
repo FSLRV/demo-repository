@@ -1,0 +1,139 @@
+{
+  "products": [
+    {
+      "weight": 0.3,
+      "width": 25,
+      "height": 5,
+      "length": 30,
+      "measurementsConfirmed": false,
+      "description": "Essencial para acompanhar o seu estilo. Confirme os detalhes da peça com a loja.",
+      "id": "tee-essential",
+      "name": "Camiseta Essential MR1",
+      "category": "camisetas",
+      "price": 149.9,
+      "oldPrice": 179.9,
+      "image": "assets/product-tee-mr1.jpg",
+      "sizes": [
+        "P",
+        "M",
+        "G",
+        "GG"
+      ],
+      "stock": 20,
+      "color": "#142b49",
+      "badge": ""
+    },
+    {
+      "weight": 0.3,
+      "width": 25,
+      "height": 5,
+      "length": 30,
+      "measurementsConfirmed": false,
+      "description": "Essencial para acompanhar o seu estilo. Confirme os detalhes da peça com a loja.",
+      "id": "hoodie-heavy",
+      "name": "Moletom Heavy Club",
+      "category": "moletons",
+      "price": 289.9,
+      "oldPrice": null,
+      "image": "assets/product-hoodie.jpg",
+      "sizes": [
+        "P",
+        "M",
+        "G",
+        "GG"
+      ],
+      "stock": 15,
+      "color": "#142b49",
+      "badge": ""
+    },
+    {
+      "weight": 0.3,
+      "width": 25,
+      "height": 5,
+      "length": 30,
+      "measurementsConfirmed": false,
+      "description": "Essencial para acompanhar o seu estilo. Confirme os detalhes da peça com a loja.",
+      "id": "cargo-utility",
+      "name": "Calça Cargo Utility",
+      "category": "calcas",
+      "price": 249.9,
+      "oldPrice": 299.9,
+      "image": "assets/product-cargo.jpg",
+      "sizes": [
+        "38",
+        "40",
+        "42",
+        "44"
+      ],
+      "stock": 12,
+      "color": "#88765b",
+      "badge": ""
+    },
+    {
+      "weight": 0.3,
+      "width": 25,
+      "height": 5,
+      "length": 30,
+      "measurementsConfirmed": false,
+      "description": "Essencial para acompanhar o seu estilo. Confirme os detalhes da peça com a loja.",
+      "id": "cap-signature",
+      "name": "Boné Signature MR1",
+      "category": "acessorios",
+      "price": 99.9,
+      "oldPrice": null,
+      "image": "assets/product-cap-mr1.jpg",
+      "sizes": [
+        "Único"
+      ],
+      "stock": 18,
+      "color": "#88765b",
+      "badge": ""
+    },
+    {
+      "weight": 0.3,
+      "width": 25,
+      "height": 5,
+      "length": 30,
+      "measurementsConfirmed": false,
+      "description": "Essencial para acompanhar o seu estilo. Confirme os detalhes da peça com a loja.",
+      "id": "tee-offwhite",
+      "name": "Camiseta Off White",
+      "category": "camisetas",
+      "price": 139.9,
+      "oldPrice": null,
+      "image": "assets/product-tee-white.jpg",
+      "sizes": [
+        "P",
+        "M",
+        "G",
+        "GG"
+      ],
+      "stock": 16,
+      "color": "#f4f7f8",
+      "badge": ""
+    },
+    {
+      "weight": 0.3,
+      "width": 25,
+      "height": 5,
+      "length": 30,
+      "measurementsConfirmed": false,
+      "description": "Essencial para acompanhar o seu estilo. Confirme os detalhes da peça com a loja.",
+      "id": "hoodie-concrete",
+      "name": "Moletom Concrete",
+      "category": "moletons",
+      "price": 269.9,
+      "oldPrice": 319.9,
+      "image": "assets/product-hoodie-gray.jpg",
+      "sizes": [
+        "P",
+        "M",
+        "G",
+        "GG"
+      ],
+      "stock": 10,
+      "color": "#b4b6b5",
+      "badge": ""
+    }
+  ]
+}

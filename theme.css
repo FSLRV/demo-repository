@@ -1,0 +1,13 @@
+:root{--ink:#142B49;--paper:#F4F7F8;--acid:#88765B;--primary-color:var(--ink);--accent-color:var(--acid);--background-color:var(--paper)}
+body,.site-header,.hero-copy,dialog,.dialog-header{background:var(--paper);color:var(--ink)}
+.announcement,.button-dark,.manifesto,.bag-button #cart-count,.size-button.is-active,.category-filters button.is-active,.empty-state .button{background:var(--ink);color:var(--paper)}
+.ticker{background:var(--acid);color:var(--paper)}.ticker span{color:var(--paper)}
+.outlined-word{color:transparent;-webkit-text-stroke-color:var(--acid)}
+.title-dot,.hero .little-cross,.category-filters .sale-filter{color:var(--acid)}
+.category-filters .sale-filter.is-active{background:var(--acid);color:var(--paper)}
+.product-badge.sale{color:var(--ink);background:var(--paper);border-color:var(--acid)}
+.hero-coordinate,.hero-footnote,.hero-copy>p,.hero-footnote strong,.footer-top>p,.footer-bottom,.section-intro,.benefits small,.product-category{color:var(--ink)}
+.newsletter,.site-footer{background:color-mix(in srgb,var(--acid) 16%,var(--paper));color:var(--ink)}
+.newsletter .eyebrow,.newsletter h2>span{color:var(--acid)}.toast{border-left-color:var(--acid)}
+.close-button:hover{background:color-mix(in srgb,var(--acid) 20%,var(--paper))}
+.manifesto-copy h2 em,.manifesto-copy>a>span{color:color-mix(in srgb,var(--acid) 80%,white)}
