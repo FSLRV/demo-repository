@@ -2,7 +2,7 @@
 
 Site estático com a identidade MR1, catálogo e sacola. Supabase fornece Auth (clientes e administradores), PostgreSQL com regras de acesso por usuário, favoritos, histórico de pedidos, imagens e configurações visuais. Não há servidor Python na publicação do GitHub Pages.
 
-Repositório: **FSLRV/demo-repository**. Endereço previsto do Pages: **https://fslrv.github.io/demo-repository/**. O endereço só fica ativo depois que a configuração Pages e o workflow de publicação tiverem sucesso.
+Repositório: **FSLRV/demo-repository**. Domínio escolhido: **https://mr1streetsp.com.br/**. O endereço padrão do Pages é **https://fslrv.github.io/demo-repository/** e redireciona quando um domínio próprio está configurado. O endereço só fica ativo depois que a configuração Pages e o workflow de publicação tiverem sucesso.
 
 Projeto Supabase selecionado: **https://tsrhrqwwunjyyujepppn.supabase.co**.
 

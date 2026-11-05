@@ -57,7 +57,7 @@ def literal(value):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--project-ref', default='tsrhrqwwunjyyujepppn')
-    parser.add_argument('--site-url', default='https://fslrv.github.io/demo-repository/')
+    parser.add_argument('--site-url', default='https://mr1streetsp.com.br/')
     parser.add_argument('--admin-email', default=os.environ.get('MR1_ADMIN_EMAIL', ''))
     parser.add_argument('--skip-admin', action='store_true')
     parser.add_argument('--existing-admin-only', action='store_true')

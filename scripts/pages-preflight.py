@@ -42,6 +42,18 @@ try:
         if domain and all(c.isalnum() or c in '.-' for c in domain):
             result['httpsProbe']=probe('https://'+domain+'/')
             result['httpProbe']=probe('http://'+domain+'/')
+        # The owner explicitly chose this domain. Enforce HTTPS only once the
+        # certificate already permits a verified HTTPS connection to it.
+        if domain=='mr1streetsp.com.br' and not data.get('https_enforced') and result.get('httpsProbe',{}).get('httpStatus'):
+            secure=Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/pages',
+                           data=b'{"https_enforced":true}',method='PUT',
+                           headers={'Authorization':'Bearer '+os.environ['PAGES_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'})
+            try:
+                with urlopen(secure,timeout=20) as response:
+                    result['httpsUpdateStatus']=response.status
+                    result['httpsEnforced']=True
+            except HTTPError as error:
+                result['httpsUpdateStatus']=error.code
         health=Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/pages/health',
                        headers={'Authorization':'Bearer '+os.environ['PAGES_TOKEN'],'Accept':'application/vnd.github+json'})
         try:
