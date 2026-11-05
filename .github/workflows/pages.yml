@@ -1,0 +1,59 @@
+name: Publish MR1 to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Apply Supabase schema when authorized
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ]; then
+            python3 scripts/provision-supabase.py --skip-admin
+          else
+            echo "Supabase management authorization not configured; publishing existing public config."
+          fi
+      - name: Build public files
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          token: ${{ secrets.PAGES_ADMIN_TOKEN || github.token }}
+          enablement: ${{ secrets.PAGES_ADMIN_TOKEN != '' }}
+      - name: Publish
+        id: publish
+        uses: actions/deploy-pages@v4
