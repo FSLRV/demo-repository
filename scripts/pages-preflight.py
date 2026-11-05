@@ -42,6 +42,16 @@ try:
         if domain and all(c.isalnum() or c in '.-' for c in domain):
             result['httpsProbe']=probe('https://'+domain+'/')
             result['httpProbe']=probe('http://'+domain+'/')
+            if domain=='mr1streetsp.com.br':
+                try:
+                    registry=Request('https://rdap.registro.br/domain/'+domain,headers={'User-Agent':'MR1-deployment-check','Accept':'application/rdap+json'})
+                    with urlopen(registry,timeout=15) as response:
+                        registration=json.load(response)
+                        result['registration']={'httpStatus':response.status,'nameservers':[server.get('ldhName') for server in registration.get('nameservers',[])]}
+                except HTTPError as error:
+                    result['registration']={'httpStatus':error.code}
+                except Exception as error:
+                    result['registration']={'error':type(error).__name__}
         # The owner explicitly chose this domain. Enforce HTTPS only once the
         # certificate already permits a verified HTTPS connection to it.
         if domain=='mr1streetsp.com.br' and not data.get('https_enforced') and result.get('httpsProbe',{}).get('httpStatus'):
@@ -58,10 +68,15 @@ try:
                        headers={'Authorization':'Bearer '+os.environ['PAGES_TOKEN'],'Accept':'application/vnd.github+json'})
         try:
             with urlopen(health,timeout=20) as response:
-                details=json.load(response).get('domain') or {}
-                result['domainHealth']={k:v for k,v in details.items() if isinstance(v,bool)}
+                result['domainHealthStatus']=response.status
+                raw=response.read()
+                if raw:
+                    details=json.loads(raw).get('domain') or {}
+                    result['domainHealth']={k:v for k,v in details.items() if isinstance(v,bool)}
         except HTTPError as error:
             result['domainHealthStatus']=error.code
+        except Exception as error:
+            result['domainHealthError']=type(error).__name__
 except HTTPError as error:
     result={'httpStatus':error.code,'configured':False}
 with open(os.environ['GITHUB_OUTPUT'],'a') as output:

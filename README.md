@@ -12,6 +12,22 @@ Edite os arquivos na branch `main` e faça commit. O workflow **Publish MR1 to G
 
 Em **Settings → Pages**, selecione **Source: GitHub Actions**. Se Pages ainda não estiver habilitado, a ativação requer uma conta com permissão sobre as configurações do repositório. O `GITHUB_TOKEN` do workflow não concede automaticamente essa permissão; o workflow aceita opcionalmente o secret `PAGES_ADMIN_TOKEN` com as permissões apropriadas.
 
+### Domínio próprio escolhido
+
+O responsável escolheu manter `mr1streetsp.com.br`. Esse domínio precisa estar registrado e apontar para GitHub Pages no provedor de DNS. Para o domínio raiz, o GitHub documenta estes registros:
+
+| Tipo | Nome/host | Destino |
+| --- | --- | --- |
+| A | @ (raiz) | 185.199.108.153 |
+| A | @ (raiz) | 185.199.109.153 |
+| A | @ (raiz) | 185.199.110.153 |
+| A | @ (raiz) | 185.199.111.153 |
+| CNAME | www | fslrv.github.io |
+
+No GitHub, **Settings → Pages → Custom domain** deve continuar como `mr1streetsp.com.br`. Após o DNS resolver corretamente e o certificado ser emitido, habilite **Enforce HTTPS**. A automação também tenta ativar HTTPS quando já consegue verificar uma conexão válida com o domínio. Registros de e-mail e outros serviços não precisam ser alterados.
+
+O endereço de retorno do Supabase Auth foi ajustado para `https://mr1streetsp.com.br/`, preservando os demais redirecionamentos já permitidos. A autorização de clientes depende de esse endereço estar acessível com HTTPS.
+
 ## Conectar e configurar o Supabase
 
 As migrações estão em `supabase/migrations/`. Elas criam apenas recursos prefixados `mr1_` e o bucket `mr1-media`, preservando tabelas de outros aplicativos no mesmo projeto. Reaplicar o catálogo inicial não sobrescreve preços, imagens ou configurações já editados.
