@@ -35,8 +35,9 @@ class ProvisionTests(unittest.TestCase):
             if url.endswith('/config/auth'):
                 if method=='PATCH':
                     self.assertIn('https://previous.example.test',payload['uri_allow_list'])
+                    self.assertNotIn('https://mr1streetsp.com.br',payload['uri_allow_list'])
                     self.assertFalse(payload['mailer_autoconfirm'])
-                return {'uri_allow_list':'https://previous.example.test'}
+                return {'uri_allow_list':'https://previous.example.test,https://mr1streetsp.com.br/'}
             if url.endswith('/api-keys'): return [{'name':'anon','api_key':key},{'name':'service_role','api_key':private}]
             self.fail(url)
         with tempfile.TemporaryDirectory() as directory:
@@ -44,7 +45,7 @@ class ProvisionTests(unittest.TestCase):
             (root/'supabase/migrations/001.sql').write_text('select 1;')
             helper.ROOT=root
             logs=io.StringIO()
-            with patch.dict(os.environ,{'SUPABASE_ACCESS_TOKEN':'fixture-pac'}), patch('sys.argv',['provision','--skip-admin','--bootstrap-admin-hash','0'*64]), patch.object(helper,'request',side_effect=request), redirect_stdout(logs):
+            with patch.dict(os.environ,{'SUPABASE_ACCESS_TOKEN':'fixture-pac'}), patch('sys.argv',['provision','--skip-admin','--bootstrap-admin-hash','0'*64,'--exclude-redirect','https://mr1streetsp.com.br/']), patch.object(helper,'request',side_effect=request), redirect_stdout(logs):
                 helper.main()
             config=(root/'config.js').read_text()
             self.assertIn(key,config)

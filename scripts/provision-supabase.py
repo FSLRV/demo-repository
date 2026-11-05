@@ -57,7 +57,8 @@ def literal(value):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--project-ref', default='tsrhrqwwunjyyujepppn')
-    parser.add_argument('--site-url', default='https://mr1streetsp.com.br/')
+    parser.add_argument('--site-url', default=os.environ.get('MR1_SITE_URL', 'https://fslrv.github.io/demo-repository/'))
+    parser.add_argument('--exclude-redirect', action='append', default=[])
     parser.add_argument('--admin-email', default=os.environ.get('MR1_ADMIN_EMAIL', ''))
     parser.add_argument('--skip-admin', action='store_true')
     parser.add_argument('--existing-admin-only', action='store_true')
@@ -93,6 +94,10 @@ def main():
     REPORT['stage'] = 'auth-configuration'
     auth = request(base + '/config/auth', token)
     redirects = {s.strip() for s in str(auth.get('uri_allow_list', '')).split(',') if s.strip()}
+    excluded = {s.rstrip('/') for s in args.exclude_redirect}
+    if args.site_url.rstrip('/') in excluded:
+        raise RuntimeError('O endereço ativo não pode ser excluído dos retornos de login.')
+    redirects = {s for s in redirects if s.rstrip('/') not in excluded}
     redirects.add(args.site_url)
     request(base + '/config/auth', token, {'site_url': args.site_url, 'uri_allow_list': ','.join(sorted(redirects)),
                                           'external_email_enabled': True, 'mailer_autoconfirm': False,

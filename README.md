@@ -2,7 +2,7 @@
 
 Site estático com a identidade MR1, catálogo e sacola. Supabase fornece Auth (clientes e administradores), PostgreSQL com regras de acesso por usuário, favoritos, histórico de pedidos, imagens e configurações visuais. Não há servidor Python na publicação do GitHub Pages.
 
-Repositório: **FSLRV/demo-repository**. Domínio escolhido: **https://mr1streetsp.com.br/**. O endereço padrão do Pages é **https://fslrv.github.io/demo-repository/** e redireciona quando um domínio próprio está configurado. O endereço só fica ativo depois que a configuração Pages e o workflow de publicação tiverem sucesso.
+Repositório: **FSLRV/demo-repository**. Domínio escolhido para o futuro: **https://mr1streetsp.com.br/**. Enquanto ele não é registrado, o endereço de publicação para testes é **https://fslrv.github.io/demo-repository/**. O endereço só fica ativo depois que a configuração Pages e o workflow de publicação tiverem sucesso.
 
 Projeto Supabase selecionado: **https://tsrhrqwwunjyyujepppn.supabase.co**.
 
@@ -24,9 +24,9 @@ O responsável escolheu manter `mr1streetsp.com.br`. Esse domínio precisa estar
 | A | @ (raiz) | 185.199.111.153 |
 | CNAME | www | fslrv.github.io |
 
-No GitHub, **Settings → Pages → Custom domain** deve continuar como `mr1streetsp.com.br`. Após o DNS resolver corretamente e o certificado ser emitido, habilite **Enforce HTTPS**. A automação também tenta ativar HTTPS quando já consegue verificar uma conexão válida com o domínio. Registros de e-mail e outros serviços não precisam ser alterados.
+No momento, a automação remove o redirecionamento para o domínio ainda não registrado, permitindo testar pelo endereço gratuito do GitHub. Depois de registrar o domínio e configurar o DNS, defina a variável de repositório `MR1_PAGES_USE_CUSTOM_DOMAIN=true` e configure **Settings → Pages → Custom domain** como `mr1streetsp.com.br`. Após a emissão do certificado, habilite **Enforce HTTPS**. Registros de e-mail e outros serviços não precisam ser alterados.
 
-O endereço de retorno do Supabase Auth foi ajustado para `https://mr1streetsp.com.br/`, preservando os demais redirecionamentos já permitidos. A autorização de clientes depende de esse endereço estar acessível com HTTPS.
+Durante o teste temporário, o retorno do Supabase Auth usa `https://fslrv.github.io/demo-repository/`. Redirecionamentos para o domínio não registrado são retirados até que ele pertença ao responsável. Ao ativar a variável do domínio próprio, a automação configura o retorno HTTPS correspondente.
 
 ## Conectar e configurar o Supabase
 

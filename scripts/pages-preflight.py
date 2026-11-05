@@ -13,10 +13,37 @@ request = Request('https://api.github.com/repos/' + os.environ['GITHUB_REPOSITOR
 try:
     with urlopen(request, timeout=30) as response:
         data=json.load(response)
+        removal_status=None
+        if os.environ.get('MR1_USE_DEFAULT_PAGES', '').lower()=='true' and data.get('cname')=='mr1streetsp.com.br':
+            # Temporary publication was requested before the domain is bought.
+            # Preserve the intended name in source, but stop redirecting the live
+            # GitHub address to a domain that does not exist.
+            default_site=Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/pages',
+                                 data=b'{"cname":null}',method='PUT',
+                                 headers={'Authorization':'Bearer '+os.environ['PAGES_TOKEN'],'Accept':'application/vnd.github+json',
+                                          'Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'})
+            try:
+                with urlopen(default_site,timeout=30) as updated:
+                    removal_status=updated.status
+                with urlopen(request,timeout=30) as updated:
+                    data=json.load(updated)
+            except HTTPError as error:
+                removal_status=error.code
+        https_status=None
+        if os.environ.get('MR1_USE_DEFAULT_PAGES','').lower()=='true' and not data.get('cname') and not data.get('https_enforced'):
+            secure_default=Request('https://api.github.com/repos/'+os.environ['GITHUB_REPOSITORY']+'/pages',
+                                   data=b'{"https_enforced":true}',method='PUT',
+                                   headers={'Authorization':'Bearer '+os.environ['PAGES_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'})
+            try:
+                with urlopen(secure_default,timeout=30) as updated:https_status=updated.status
+                with urlopen(request,timeout=30) as updated:data=json.load(updated)
+            except HTTPError as error:https_status=error.code
         result={'httpStatus':200,'buildType':data.get('build_type'),'configured':True,
                 'cname':data.get('cname'),'httpsEnforced':data.get('https_enforced'),
                 'certificateState':(data.get('https_certificate') or {}).get('state'),
                 'status':data.get('status')}
+        if removal_status is not None:result['temporaryDomainRemovalStatus']=removal_status
+        if https_status is not None:result['defaultHttpsUpdateStatus']=https_status
         def probe(url):
             host=urlparse(url).hostname
             observed={'url':url}
