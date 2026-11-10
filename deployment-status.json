@@ -1,17 +1,17 @@
 {
-  "commit": "7952dcf0f25a77e0bac581a14ad3426822c0610f",
-  "runId": "42848300540",
-  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42848300540",
-  "createdAt": "2026-11-10T15:52:04.672400+00:00",
+  "commit": "b0ca2b668abf6854f5a5727d4ad3f9baaa7562ed",
+  "runId": "42848943432",
+  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42848943432",
+  "createdAt": "2026-11-10T15:53:06.617606+00:00",
   "build": "success",
-  "deployment": "success",
+  "deployment": "pending",
   "supabase": {
     "tokenPresent": true,
     "schemaApplied": true,
     "manualOrdersReady": true,
     "customEmailConfigured": true,
     "smtpProvider": "gmail",
-    "smtpGmailSettingsValid": false,
+    "smtpGmailSettingsValid": true,
     "ownerAccountExists": false,
     "ownerEmailConfirmed": false,
     "authConfigured": true,
@@ -20,41 +20,8 @@
     "stage": "complete",
     "error": null
   },
-  "pages": {
-    "httpStatus": 200,
-    "buildType": "workflow",
-    "configured": true,
-    "cname": null,
-    "httpsEnforced": false,
-    "certificateState": null,
-    "status": null,
-    "defaultHttpsUpdateStatus": 403,
-    "defaultProbe": {
-      "url": "https://fslrv.github.io/demo-repository/",
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153",
-        "2606:50c0:8000::153",
-        "2606:50c0:8001::153",
-        "2606:50c0:8002::153",
-        "2606:50c0:8003::153"
-      ],
-      "httpStatus": 200,
-      "finalOrigin": "https://fslrv.github.io",
-      "storefront": true
-    },
-    "domainHealthStatus": 403
-  },
-  "live": {
-    "live": true,
-    "catalogRead": true,
-    "settingsRead": true,
-    "privateOrdersBlocked": true,
-    "manualStorefront": true,
-    "cepLookup": true
-  },
+  "pages": {},
+  "live": {},
   "databaseChecks": {
     "ready": true,
     "catalogRead": true,
@@ -62,5 +29,5 @@
     "privateTablesBlocked": true,
     "authAvailable": true
   },
-  "url": "http://fslrv.github.io/demo-repository/"
+  "url": ""
 }
