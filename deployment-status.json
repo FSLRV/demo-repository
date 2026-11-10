@@ -1,10 +1,10 @@
 {
-  "commit": "b0ca2b668abf6854f5a5727d4ad3f9baaa7562ed",
-  "runId": "42848943432",
-  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42848943432",
-  "createdAt": "2026-11-10T15:53:44.705728+00:00",
+  "commit": "60ba727ab673a18583cf0c6d530b05102403cb7e",
+  "runId": "42853219001",
+  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42853219001",
+  "createdAt": "2026-11-10T16:19:11.981500+00:00",
   "build": "success",
-  "deployment": "success",
+  "deployment": "pending",
   "supabase": {
     "tokenPresent": true,
     "schemaApplied": true,
@@ -12,49 +12,18 @@
     "customEmailConfigured": true,
     "smtpProvider": "gmail",
     "smtpGmailSettingsValid": true,
-    "ownerAccountExists": false,
-    "ownerEmailConfirmed": false,
+    "ownerAccountExists": true,
+    "ownerEmailConfirmed": true,
     "authConfigured": true,
+    "authSiteUrl": "https://mr1storesp.com.br/",
+    "authRedirectsConfigured": true,
     "publicConfigReady": true,
-    "ownerReady": false,
+    "ownerReady": true,
     "stage": "complete",
     "error": null
   },
-  "pages": {
-    "httpStatus": 200,
-    "buildType": "workflow",
-    "configured": true,
-    "cname": null,
-    "httpsEnforced": false,
-    "certificateState": null,
-    "status": null,
-    "defaultHttpsUpdateStatus": 403,
-    "defaultProbe": {
-      "url": "https://fslrv.github.io/demo-repository/",
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153",
-        "2606:50c0:8000::153",
-        "2606:50c0:8001::153",
-        "2606:50c0:8002::153",
-        "2606:50c0:8003::153"
-      ],
-      "httpStatus": 200,
-      "finalOrigin": "https://fslrv.github.io",
-      "storefront": true
-    },
-    "domainHealthStatus": 403
-  },
-  "live": {
-    "live": true,
-    "catalogRead": true,
-    "settingsRead": true,
-    "privateOrdersBlocked": true,
-    "manualStorefront": true,
-    "cepLookup": true
-  },
+  "pages": {},
+  "live": {},
   "databaseChecks": {
     "ready": true,
     "catalogRead": true,
@@ -62,5 +31,5 @@
     "privateTablesBlocked": true,
     "authAvailable": true
   },
-  "url": "http://fslrv.github.io/demo-repository/"
+  "url": ""
 }
