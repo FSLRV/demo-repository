@@ -31,13 +31,14 @@ class ProvisionTests(unittest.TestCase):
         def request(url,token,payload=None,method=None,api_key=None):
             calls.append((url,payload,method))
             if url.endswith('/database/query'):
+                if 'as account_exists' in payload['query']: return [{'account_exists':True,'email_confirmed':True}]
                 return [{'ready':True}] if 'as ready;' in payload['query'] else []
             if url.endswith('/config/auth'):
                 if method=='PATCH':
                     self.assertIn('https://previous.example.test',payload['uri_allow_list'])
                     self.assertNotIn('https://mr1streetsp.com.br',payload['uri_allow_list'])
                     self.assertFalse(payload['mailer_autoconfirm'])
-                return {'uri_allow_list':'https://previous.example.test,https://mr1streetsp.com.br/'}
+                return {'uri_allow_list':'https://previous.example.test,https://mr1streetsp.com.br/','smtp_host':'smtp.gmail.com','smtp_admin_email':'owner@example.test','smtp_user':'owner@example.test','smtp_port':465,'smtp_pass':'fixture-smtp-password-never-log'}
             if url.endswith('/api-keys'): return [{'name':'anon','api_key':key},{'name':'service_role','api_key':private}]
             self.fail(url)
         with tempfile.TemporaryDirectory() as directory:
@@ -54,6 +55,10 @@ class ProvisionTests(unittest.TestCase):
             self.assertNotIn(key,logs.getvalue())
             self.assertTrue(helper.REPORT['schemaApplied'])
             self.assertTrue(helper.REPORT['ownerReady'])
+            self.assertTrue(helper.REPORT['ownerAccountExists'])
+            self.assertTrue(helper.REPORT['ownerEmailConfirmed'])
+            self.assertTrue(helper.REPORT['smtpGmailSettingsValid'])
+            self.assertNotIn('fixture-smtp-password-never-log',json.dumps(helper.REPORT)+config+logs.getvalue())
 
     def test_provider_error_does_not_echo_body_or_credentials(self):
         helper=module()

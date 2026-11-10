@@ -155,8 +155,9 @@
     }
   }
 
-  function openAccount(tab = null) {
+  function openAccount(tab = null, mode = null) {
     if (tab) activeTab = tab;
+    if (mode === 'register' || mode === 'login') authMode = mode;
     message('');
     if (!dialog.open) dialog.showModal();
     if (customer.authenticated) loadTab(activeTab);
@@ -165,7 +166,7 @@
 
   function renderAuth() {
     const register = authMode === 'register';
-    view.innerHTML = `<section class="account-auth"><div class="account-auth-heading"><p class="eyebrow">SEU ESPAÇO NA MR1</p><h3>${register ? 'Seu estilo começa aqui.' : 'Bom ter você de volta.'}</h3><p>${register ? 'Crie sua conta para guardar favoritos e acompanhar os pedidos feitos enquanto você estiver conectado.' : 'Entre para ver suas peças favoritas e acompanhar seus pedidos.'}</p></div><div class="account-auth-tabs" aria-label="Acesso à conta"><button type="button" data-account-mode="login" class="${register ? '' : 'is-active'}" aria-pressed="${!register}">Entrar</button><button type="button" data-account-mode="register" class="${register ? 'is-active' : ''}" aria-pressed="${register}">Criar conta</button></div><form id="customer-auth-form" class="admin-form account-auth-form">${register ? '<label for="customer-name">Seu nome<input id="customer-name" name="name" autocomplete="name" required minlength="2" maxlength="100" placeholder="Como podemos chamar você?"></label>' : ''}<label for="customer-email">E-mail<input id="customer-email" name="email" type="email" autocomplete="username" required maxlength="254" placeholder="Seu e-mail"></label><label for="customer-password">Senha<input id="customer-password" name="password" type="password" autocomplete="${register ? 'new-password' : 'current-password'}" required ${register ? 'minlength="12"' : ''} maxlength="256" placeholder="${register ? 'Crie uma senha com pelo menos 12 caracteres' : 'Sua senha'}"></label>${register ? '<label for="customer-password-confirm">Confirme sua senha<input id="customer-password-confirm" name="confirmPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="256" placeholder="Digite novamente a senha"></label>' : ''}<p class="account-auth-error form-error" id="customer-auth-error" role="alert"></p><button type="submit" class="button button-dark" ${authBusy ? 'disabled' : ''}>${authBusy ? 'AGUARDE...' : register ? 'CRIAR MINHA CONTA' : 'ENTRAR NA MINHA CONTA'} <span aria-hidden="true">↗</span></button></form><p class="account-auth-note">${register ? 'Seus favoritos ficam salvos na sua conta para você acessar de outro dispositivo.' : 'Acesso de clientes. Para editar a loja, use “Gerenciar loja” no rodapé.'}</p></section>`;
+    view.innerHTML = `<section class="account-auth"><div class="account-auth-heading"><p class="eyebrow">SEU ESPAÇO NA MR1</p><h3>${register ? 'Seu estilo começa aqui.' : 'Bom ter você de volta.'}</h3><p>${register ? 'Crie sua conta para guardar favoritos e acompanhar os pedidos feitos enquanto você estiver conectado.' : 'Entre para ver suas peças favoritas e acompanhar seus pedidos.'}</p></div><div class="account-auth-tabs" aria-label="Acesso à conta"><button type="button" data-account-mode="login" class="${register ? '' : 'is-active'}" aria-pressed="${!register}">Entrar</button><button type="button" data-account-mode="register" class="${register ? 'is-active' : ''}" aria-pressed="${register}">Criar conta</button></div><form id="customer-auth-form" class="admin-form account-auth-form">${register ? '<label for="customer-name">Seu nome<input id="customer-name" name="name" autocomplete="name" required minlength="2" maxlength="100" placeholder="Como podemos chamar você?"></label>' : ''}<label for="customer-email">E-mail<input id="customer-email" name="email" type="email" autocomplete="username" required maxlength="254" placeholder="Seu e-mail"></label><label for="customer-password">Senha<input id="customer-password" name="password" type="password" autocomplete="${register ? 'new-password' : 'current-password'}" required ${register ? 'minlength="12"' : ''} maxlength="256" placeholder="${register ? 'Crie uma senha com pelo menos 12 caracteres' : 'Sua senha'}"></label>${register ? '<label for="customer-password-confirm">Confirme sua senha<input id="customer-password-confirm" name="confirmPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="256" placeholder="Digite novamente a senha"></label>' : ''}<p class="account-auth-error form-error" id="customer-auth-error" role="alert"></p><button type="submit" class="button button-dark" ${authBusy ? 'disabled' : ''}>${authBusy ? 'AGUARDE...' : register ? 'CRIAR MINHA CONTA' : 'ENTRAR NA MINHA CONTA'} <span aria-hidden="true">↗</span></button></form>${register ? '' : '<button type="button" class="text-button" id="resend-confirmation">Reenviar confirmação de e-mail</button>'}<p class="account-auth-note">${register ? 'Seus favoritos ficam salvos na sua conta para você acessar de outro dispositivo.' : 'Acesso de clientes. Para editar a loja, use “Gerenciar loja” no rodapé.'}</p></section>`;
   }
 
   function tabHeader() {
@@ -239,7 +240,8 @@
       if (data.confirmationRequired) {
         authBusy = false;
         authMode = 'login'; renderAuth();
-        message('Conta solicitada. Confirme o link enviado pelo Supabase ao seu e-mail e depois entre com sua senha.');
+        $('customer-email').value = payload.email;
+        message('Confirme seu cadastro pelo e-mail e depois entre com sua senha. Confira também o spam. Se precisar, use “Reenviar confirmação”.');
         return;
       }
       if (!data.authenticated || !data.csrfToken) throw new Error('O acesso não foi confirmado pelo servidor. Tente entrar novamente.');
@@ -311,6 +313,20 @@
     announceFavorite.timer = setTimeout(() => { element.hidden = true; }, 4000);
   }
 
+  async function resendConfirmation(button) {
+    if (authBusy) return;
+    const email = $('customer-email');
+    if (!email?.reportValidity()) return;
+    button.disabled = true;
+    if ($('customer-auth-error')) $('customer-auth-error').textContent = '';
+    message('Solicitando a confirmação de cadastro...');
+    try {
+      await api('/api/account/resend-confirmation', { method: 'POST', body: { email: email.value.trim() } });
+      message('Se houver um cadastro pendente para esse e-mail, você receberá uma nova confirmação. Confira a caixa de entrada e o spam.');
+    } catch (error) { message(error.message, true); }
+    finally { if (button.isConnected) button.disabled = false; }
+  }
+
   $('account-button')?.addEventListener('click', () => openAccount());
   $('account-close')?.addEventListener('click', () => dialog.close());
   view.addEventListener('submit', submitAuth);
@@ -321,6 +337,8 @@
     if (open) { event.preventDefault(); openAccount(open.dataset.openAccount || null); }
   });
   view.addEventListener('click', (event) => {
+    const resend = event.target.closest('#resend-confirmation');
+    if (resend) { resendConfirmation(resend); return; }
     const mode = event.target.closest('[data-account-mode]');
     if (mode && !authBusy) { authMode = mode.dataset.accountMode === 'register' ? 'register' : 'login'; message(''); renderAuth(); return; }
     const tab = event.target.closest('[data-account-tab]');
@@ -338,7 +356,7 @@
     view.querySelectorAll('input[type="password"]').forEach((input) => { input.value = ''; });
   });
   document.addEventListener('mr1:order-updated', () => { ordersLoaded = false; if (customer.authenticated && dialog.open && activeTab === 'orders') loadTab('orders'); });
-  document.addEventListener('mr1:open-account', (event) => openAccount(event.detail?.tab));
+  document.addEventListener('mr1:open-account', (event) => openAccount(event.detail?.tab, event.detail?.mode));
   const grid = $('product-grid');
   if (grid) new MutationObserver(updateFavoriteButtons).observe(grid, { childList: true, subtree: true });
   window.MR1Account = Object.freeze({

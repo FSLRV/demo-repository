@@ -475,6 +475,10 @@
   $('shipping-form').addEventListener('submit', quoteShipping);
   $('shipping-cep').addEventListener('input', () => { const digits = $('shipping-cep').value.replace(/\D/g, '').slice(0, 8); $('shipping-cep').value = digits.length > 5 ? digits.slice(0, 5) + '-' + digits.slice(5) : digits; invalidateShipping('Calcule a entrega para o CEP informado.'); renderCart(); });
   $('shipping-result').addEventListener('change', (event) => { if (event.target.matches('[data-shipping-option]')) selectShipping(event.target.dataset.shippingOption); });
+  $('admin-create-account')?.addEventListener('click', () => {
+    $('admin-dialog').close();
+    document.dispatchEvent(new CustomEvent('mr1:open-account', { detail: { tab: 'profile', mode: 'register' } }));
+  });
   $('checkout-button').addEventListener('click', () => openCheckout().catch((error) => toast(error.message)));
   $('refresh-admin-orders')?.addEventListener('click', loadOrders);
   document.addEventListener('mr1:order-updated', (event) => {

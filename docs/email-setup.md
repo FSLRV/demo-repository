@@ -30,11 +30,11 @@ Substitua `seu-email@gmail.com` pelo Gmail administrativo informado no atendimen
 
 ## 3. Confirmar o primeiro acesso
 
-1. Abra a loja e clique em **Minha conta → Criar conta**.
+1. Abra a loja e clique em **Gerenciar loja → Criar meu acesso à loja** (ou **Minha conta → Criar conta**).
 2. Use o e-mail administrativo acima e escolha uma senha própria com pelo menos 12 caracteres.
 3. Abra a mensagem de confirmação na caixa de entrada ou no spam. O link deve voltar para o endereço publicado da loja.
 4. Depois de confirmar, entre em **Gerenciar loja** com o mesmo e-mail e senha. A autorização administrativa é concedida somente à conta confirmada do responsável.
-5. Para uma conta já cadastrada, procure a confirmação anterior ou use **Authentication → Users** no Supabase para reenviar a confirmação à conta ainda não confirmada. Evite repetir cadastros do mesmo endereço.
+5. Para uma conta já cadastrada, abra **Minha conta → Entrar**, informe o e-mail e clique em **Reenviar confirmação de e-mail**. Não precisa informar senha para pedir o reenvio. Confira o spam e aguarde alguns minutos se houver aviso de muitas tentativas.
 6. Teste também uma nova conta de cliente com outro endereço de e-mail ao qual você tenha acesso. Confirme que essa conta consegue entrar e consultar seus próprios pedidos e favoritos.
 
 Não desabilite a confirmação de e-mail para contornar problemas de envio: a autorização inicial da administração depende de comprovar a propriedade do e-mail.

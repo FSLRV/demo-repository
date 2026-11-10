@@ -24,7 +24,8 @@
     if (error.code === '23503') throw problem(409, 'A peça não está mais disponível.', 'product_not_found');
     if (error.code === '23514' || error.code === '22023') throw problem(422, 'Revise os dados informados antes de salvar.', 'invalid_data');
     if (['42P01', 'PGRST205', 'PGRST202'].includes(error.code)) throw problem(503, 'A configuração do banco da loja ainda não foi concluída.', 'schema_not_ready');
-    if (error.status === 429) throw problem(429, 'Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.', 'rate_limited');
+    if (error.code === 'over_email_send_rate_limit' || error.code === 'over_request_rate_limit' || error.status === 429) throw problem(429, 'Já houve muitas tentativas. Aguarde alguns minutos antes de solicitar outra mensagem ou tentar entrar.', 'rate_limited');
+    if (error.code === 'email_address_not_authorized' || /error sending (?:confirmation|recovery|magic link) email/i.test(error.message || '')) throw problem(503, 'Não foi possível enviar o e-mail de confirmação. Tente mais tarde ou entre em contato com a loja.', 'confirmation_delivery_failed');
     if (/invalid login credentials/i.test(error.message || '')) throw problem(401, 'E-mail ou senha inválidos.', 'invalid_credentials');
     if (/email not confirmed/i.test(error.message || '')) throw problem(401, 'Confirme seu e-mail antes de entrar na conta.', 'email_not_confirmed');
     if (/password/i.test(error.message || '')) throw problem(422, 'Use uma senha de pelo menos 12 caracteres.', 'invalid_password');
@@ -155,6 +156,12 @@
       const data = check(await client().auth.signUp({ email: String(body.email || '').trim(), password: body.password,
         options: { data: { name: body.name.trim() }, emailRedirectTo: new URL('./', document.baseURI).href } }));
       return data.session ? session(false) : { authenticated: false, confirmationRequired: true };
+    }
+    if (pathname === '/api/account/resend-confirmation' && method === 'POST') {
+      const email = String(body.email || '').trim();
+      if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw problem(422, 'Informe seu e-mail para reenviar a confirmação.', 'invalid_email');
+      check(await client().auth.resend({ type: 'signup', email, options: { emailRedirectTo: new URL('./', document.baseURI).href } }));
+      return { requested: true };
     }
     if (['/api/logout', '/api/account/logout'].includes(pathname) && method === 'POST') {
       check(await client().auth.signOut());

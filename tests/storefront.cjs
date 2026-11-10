@@ -29,6 +29,7 @@ async function mockSupabase(context) {
   const favorites = new Set();
   let uploads = 0, orderWrites = 0;
   const orders = [];
+  const confirmationRequests = [];
   await context.route('https://viacep.com.br/**', route => {
     const cep = route.request().url().split('/')[4];
     const city = cep === '05879450' ? {cep:'05879-450',localidade:'São Paulo',uf:'SP',ibge:'3550308'}
@@ -41,7 +42,17 @@ async function mockSupabase(context) {
     const actor=fromToken(request.headers().authorization || '');
     let body={}; try {body=request.postDataJSON() || {};}catch{}
     const json=(data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
-    if(url.pathname==='/auth/v1/signup') return json({user:account(body.email),session:null});
+    if(url.pathname==='/auth/v1/signup') {
+      if(body.email==='smtp-fail@example.test') return json({code:'unexpected_failure',msg:'Error sending confirmation email: fixture-private-provider-details'},500);
+      return json({user:account(body.email),session:null});
+    }
+    if(url.pathname==='/auth/v1/resend') {
+      assert.equal(body.type,'signup');
+      assert.ok(url.searchParams.get('redirect_to')?.endsWith('/demo-repository/'));
+      if(body.email==='rate@example.test') return json({code:'over_email_send_rate_limit',msg:'email rate limit exceeded'},429);
+      if(body.email==='smtp-fail@example.test') return json({code:'unexpected_failure',msg:'Error sending confirmation email: fixture-private-provider-details'},500);
+      confirmationRequests.push(body.email);return json({});
+    }
     if(url.pathname==='/auth/v1/token') {
       if(body.password!=='Fixture-password-123') return json({message:'Invalid login credentials',error_code:'invalid_credentials'},400);
       const user=account(body.email);return json({access_token:token(user),refresh_token:'fixture-refresh',expires_in:3600,expires_at:Math.floor(Date.now()/1000)+3600,token_type:'bearer',user});
@@ -99,7 +110,7 @@ async function mockSupabase(context) {
     if(url.pathname.startsWith('/storage/v1/object/')){assert.equal(actor?.email,'owner@example.test');uploads++;return json({Key:url.pathname.split('/object/')[1]});}
     throw Error('Endpoint inesperado: '+url.pathname);
   });
-  return {products,favorites,get settings(){return settings},get uploads(){return uploads},get orderWrites(){return orderWrites}};
+  return {products,favorites,confirmationRequests,get settings(){return settings},get uploads(){return uploads},get orderWrites(){return orderWrites}};
 }
 
 (async()=>{
@@ -122,12 +133,24 @@ async function mockSupabase(context) {
       await page.goto(address,{waitUntil:'networkidle'});
       await page.locator('.product-card').first().waitFor();assert.equal(await page.locator('.product-card').count(),6);
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),width);
+      await page.locator('#admin-button').click();await page.locator('#admin-create-account').click();
+      await page.locator('#customer-name').waitFor();assert.equal(await page.locator('#admin-dialog').getAttribute('open'),null);
+      await page.locator('#account-close').click();
       await page.locator('.favorite-button').first().click();
       await page.locator('[data-account-mode="register"]').click();
       await page.locator('#customer-name').fill('Cliente novo');await page.locator('#customer-email').fill('new@example.test');
       await page.locator('#customer-password').fill('Fixture-password-123');await page.locator('#customer-password-confirm').fill('Fixture-password-123');
       await page.locator('#customer-auth-form button[type=submit]').click();
       await page.waitForFunction(()=>document.querySelector('#account-message')?.textContent.includes('Confirme'));
+      assert.equal(await page.locator('#customer-email').inputValue(),'new@example.test');
+      await page.locator('#resend-confirmation').click();
+      await page.waitForFunction(()=>document.querySelector('#account-message')?.textContent.includes('cadastro pendente'));
+      assert.deepEqual(fixture.confirmationRequests,['new@example.test']);
+      await page.locator('#customer-email').fill('rate@example.test');await page.locator('#resend-confirmation').click();
+      await page.waitForFunction(()=>document.querySelector('#account-message')?.textContent.includes('Aguarde alguns minutos'));
+      await page.locator('#customer-email').fill('smtp-fail@example.test');await page.locator('#resend-confirmation').click();
+      await page.waitForFunction(()=>document.querySelector('#account-message')?.textContent.includes('Não foi possível enviar'));
+      assert.ok(!(await page.locator('#account-message').innerText()).includes('fixture-private-provider-details'));
       await page.locator('#customer-email').fill('client@example.test');await page.locator('#customer-password').fill('Fixture-password-123');
       await page.locator('#customer-auth-form button[type=submit]').click();
       await page.locator('.account-favorite').first().waitFor();assert.ok(fixture.favorites.has('tee-essential'));
@@ -201,7 +224,7 @@ async function mockSupabase(context) {
       assert.deepEqual(errors,[]);
       await fs.mkdir('/tmp/mr1-manual-preview',{recursive:true});
       await page.screenshot({path:`/tmp/mr1-manual-preview/orders-${width}.png`,fullPage:true});
-      console.log(`PASS UI ${width}px: conta, favoritos, capital grátis, CEP inválido, Correios sob consulta, pedido, Pix manual, confirmação, rastreio e edição da loja.`);
+      console.log(`PASS UI ${width}px: primeiro acesso, confirmação/reenvio, erros de e-mail, conta, favoritos, capital grátis, CEP inválido, Correios sob consulta, pedido, Pix manual, confirmação, rastreio e edição da loja.`);
       await context.close();
     }
   } finally {await browser.close();await new Promise(r=>server.close(r));}

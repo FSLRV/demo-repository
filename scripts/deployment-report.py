@@ -12,7 +12,7 @@ def data(name):
         return {}
 
 provision=data('SUPABASE_REPORT')
-safe_fields=('tokenPresent','schemaApplied','manualOrdersReady','customEmailConfigured','authConfigured','publicConfigReady','ownerReady','stage','httpStatus','endpoint','sqlState','error')
+safe_fields=('tokenPresent','schemaApplied','manualOrdersReady','customEmailConfigured','smtpProvider','smtpGmailSettingsValid','ownerAccountExists','ownerEmailConfirmed','authConfigured','publicConfigReady','ownerReady','stage','httpStatus','endpoint','sqlState','error')
 result={
     'commit':os.environ['GITHUB_SHA'],
     'runId':os.environ['GITHUB_RUN_ID'],

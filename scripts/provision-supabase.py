@@ -96,6 +96,12 @@ def main():
     REPORT['stage'] = 'auth-configuration'
     auth = request(base + '/config/auth', token)
     REPORT['customEmailConfigured'] = bool(auth.get('smtp_host') and auth.get('smtp_admin_email'))
+    gmail = str(auth.get('smtp_host') or '').strip().lower() == 'smtp.gmail.com'
+    REPORT['smtpProvider'] = 'gmail' if gmail else ('other' if auth.get('smtp_host') else 'not_configured')
+    if gmail:
+        sender = str(auth.get('smtp_admin_email') or '').strip().lower()
+        login = str(auth.get('smtp_user') or '').strip().lower()
+        REPORT['smtpGmailSettingsValid'] = bool(sender and sender == login and str(auth.get('smtp_port')) in ('465', '587'))
     redirects = {s.strip() for s in str(auth.get('uri_allow_list', '')).split(',') if s.strip()}
     excluded = {s.rstrip('/') for s in args.exclude_redirect}
     if args.site_url.rstrip('/') in excluded:
@@ -128,6 +134,9 @@ def main():
         query("insert into public.mr1_owner_bootstrap(id,email_sha256) values ('owner'," + literal(args.bootstrap_admin_hash) + ") on conflict (id) do nothing;")
         query("select public.mr1_claim_owner(id) from auth.users where email_confirmed_at is not null and encode(sha256(convert_to(lower(trim(email)),'UTF8')),'hex')=" + literal(args.bootstrap_admin_hash) + ';')
         owner = query("select exists(select 1 from public.mr1_admins a join auth.users u on u.id=a.user_id where encode(sha256(convert_to(lower(trim(u.email)),'UTF8')),'hex')=" + literal(args.bootstrap_admin_hash) + ') as ready;')
+        account = query("select count(*) > 0 as account_exists, coalesce(bool_or(email_confirmed_at is not null),false) as email_confirmed from auth.users where encode(sha256(convert_to(lower(trim(email)),'UTF8')),'hex')=" + literal(args.bootstrap_admin_hash) + ';')
+        REPORT['ownerAccountExists'] = bool(account and account[0]['account_exists'])
+        REPORT['ownerEmailConfirmed'] = bool(account and account[0]['email_confirmed'])
         REPORT['ownerReady'] = bool(owner and owner[0]['ready'])
         print('Autorização administrativa preparada: somente a conta confirmada do responsável poderá reivindicá-la.')
     REPORT['stage'] = 'complete'
