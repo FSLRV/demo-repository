@@ -1,10 +1,10 @@
 {
-  "commit": "1aa649ef0785bf948bba9e5d4290e67131a9bc75",
-  "runId": "42894697162",
-  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42894697162",
-  "createdAt": "2026-11-10T20:23:45.217803+00:00",
+  "commit": "2c7a0e71e8858c253459184ff59505d9d559fb80",
+  "runId": "42895337462",
+  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42895337462",
+  "createdAt": "2026-11-10T20:27:11.864202+00:00",
   "build": "success",
-  "deployment": "success",
+  "deployment": "pending",
   "supabase": {
     "tokenPresent": true,
     "schemaApplied": true,
@@ -22,164 +22,8 @@
     "stage": "complete",
     "error": null
   },
-  "pages": {
-    "desiredDomain": "mr1storesp.com.br",
-    "domainDns": {
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153"
-      ],
-      "pointsToGitHub": true
-    },
-    "wwwDns": {
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153",
-        "2606:50c0:8000::153",
-        "2606:50c0:8001::153",
-        "2606:50c0:8002::153",
-        "2606:50c0:8003::153"
-      ],
-      "pointsToGitHub": true
-    },
-    "registration": {
-      "httpStatus": 200,
-      "nameservers": [
-        "d.sec.dns.br",
-        "e.sec.dns.br"
-      ]
-    },
-    "authoritativeDns": {
-      "available": true,
-      "recordsCorrect": true,
-      "records": [
-        {
-          "server": "d.sec.dns.br",
-          "name": "mr1storesp.com.br",
-          "type": "A",
-          "values": [
-            "185.199.108.153",
-            "185.199.109.153",
-            "185.199.110.153",
-            "185.199.111.153"
-          ],
-          "status": "NOERROR"
-        },
-        {
-          "server": "d.sec.dns.br",
-          "name": "www.mr1storesp.com.br",
-          "type": "CNAME",
-          "values": [
-            "fslrv.github.io"
-          ],
-          "status": "NOERROR"
-        },
-        {
-          "server": "e.sec.dns.br",
-          "name": "mr1storesp.com.br",
-          "type": "A",
-          "values": [
-            "185.199.108.153",
-            "185.199.109.153",
-            "185.199.110.153",
-            "185.199.111.153"
-          ],
-          "status": "NOERROR"
-        },
-        {
-          "server": "e.sec.dns.br",
-          "name": "www.mr1storesp.com.br",
-          "type": "CNAME",
-          "values": [
-            "fslrv.github.io"
-          ],
-          "status": "NOERROR"
-        }
-      ]
-    },
-    "dnsPropagationPending": false,
-    "httpStatus": 200,
-    "configured": true,
-    "buildType": "workflow",
-    "cname": "mr1storesp.com.br",
-    "httpsEnforced": false,
-    "certificateState": "approved",
-    "status": null,
-    "httpsProbe": {
-      "url": "https://mr1storesp.com.br/",
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153"
-      ],
-      "httpStatus": 200,
-      "finalOrigin": "https://mr1storesp.com.br",
-      "storefront": true
-    },
-    "httpProbe": {
-      "url": "http://mr1storesp.com.br/",
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153"
-      ],
-      "httpStatus": 200,
-      "finalOrigin": "http://mr1storesp.com.br",
-      "storefront": true
-    },
-    "wwwProbe": {
-      "url": "https://www.mr1storesp.com.br/",
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153",
-        "2606:50c0:8000::153",
-        "2606:50c0:8001::153",
-        "2606:50c0:8002::153",
-        "2606:50c0:8003::153"
-      ],
-      "httpStatus": 200,
-      "finalOrigin": "https://mr1storesp.com.br",
-      "storefront": true
-    },
-    "customDomainReady": true,
-    "httpsUpdateStatus": 403,
-    "defaultProbe": {
-      "url": "https://fslrv.github.io/demo-repository/",
-      "addresses": [
-        "185.199.108.153",
-        "185.199.109.153",
-        "185.199.110.153",
-        "185.199.111.153",
-        "2606:50c0:8000::153",
-        "2606:50c0:8001::153",
-        "2606:50c0:8002::153",
-        "2606:50c0:8003::153"
-      ],
-      "httpStatus": 200,
-      "finalOrigin": "http://mr1storesp.com.br",
-      "storefront": true
-    },
-    "domainHealthStatus": 403
-  },
-  "live": {
-    "live": true,
-    "catalogRead": true,
-    "settingsRead": true,
-    "privateOrdersBlocked": true,
-    "manualStorefront": true,
-    "cepLookup": true,
-    "customDomainReady": true,
-    "activeOrigin": "http://mr1storesp.com.br",
-    "desiredDomain": "mr1storesp.com.br"
-  },
+  "pages": {},
+  "live": {},
   "databaseChecks": {
     "ready": true,
     "catalogRead": true,
@@ -187,5 +31,5 @@
     "privateTablesBlocked": true,
     "authAvailable": true
   },
-  "url": "http://mr1storesp.com.br/"
+  "url": ""
 }
