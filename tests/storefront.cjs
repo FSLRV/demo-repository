@@ -185,6 +185,7 @@ async function mockSupabase(context) {
       await page.locator('#account-button').click();await page.locator('#customer-email').fill('client@example.test');await page.locator('#customer-password').fill('Fixture-password-123');
       await page.locator('#customer-auth-form button[type=submit]').click();await page.locator('.pix-payment textarea').waitFor();
       assert.equal(await page.locator('.pix-payment textarea').inputValue(),pix(173.8));
+      assert.match(await page.locator('.customer-order').innerText(),/Prazo após envio: 5 dia/);
       await page.locator('[data-report-pix]').click();await page.waitForFunction(()=>document.querySelector('.customer-order-status')?.textContent.includes('Pagamento informado'));
       await page.locator('[data-account-tab="profile"]').click();await page.locator('[data-account-logout]').click();await page.locator('#customer-auth-form').waitFor();await page.locator('#account-close').click();
       await page.locator('#admin-button').click();await page.locator('#admin-email').fill('owner@example.test');await page.locator('#admin-password').fill('Fixture-password-123');

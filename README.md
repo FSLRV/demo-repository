@@ -47,6 +47,8 @@ Enquanto faltar a chave pública, a página mostra o catálogo de prévia e info
 
 Clientes usam **Minha conta** no cabeçalho para criar conta, entrar, guardar favoritos e ver seus pedidos. A confirmação de cadastro depende do Auth/SMTP configurado no projeto Supabase. Não há senhas padrão. Crie e confirme a conta do responsável antes de entrar em **Gerenciar loja**. Para cadastros de clientes externos, configure um provedor de envio em **Supabase → Authentication → Email → SMTP Settings**: o envio padrão do Supabase é restrito e não substitui SMTP para uma loja pública. O relatório de publicação informa somente se o SMTP próprio está configurado, sem expor credenciais.
 
+Veja o [passo a passo de SMTP com Gmail e primeiro acesso administrativo](docs/email-setup.md). As credenciais são inseridas diretamente no Supabase; não é preciso enviá-las pelo chat nem adicionar outro token ao GitHub.
+
 A publicação prepara a autorização do e-mail administrativo informado pelo responsável. O banco guarda apenas seu digest: essa conta recebe a permissão uma única vez, após confirmar o e-mail pelo Supabase. Cadastro de outro endereço, metadados de perfil ou e-mail não confirmado não concedem acesso ao painel.
 
 Para autorizar uma conta já criada e com e-mail confirmado, execute o workflow **Authorize existing MR1 administrator**, informando o e-mail. Ele usa o secret `SUPABASE_ACCESS_TOKEN` e concede a permissão somente à conta confirmada. Não vincula privilégios a um e-mail não verificado e não permite que clientes se promovam.
