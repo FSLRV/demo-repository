@@ -1,6 +1,6 @@
 # MR1 streetwear — GitHub Pages + Supabase
 
-Site estático com a identidade MR1, catálogo e sacola. Supabase fornece Auth (clientes e administradores), PostgreSQL com regras de acesso por usuário, favoritos, histórico de pedidos, imagens e configurações visuais. Não há servidor Python na publicação do GitHub Pages.
+Loja MR1 com catálogo, sacola, pedidos por Pix manual e atendimento pelo painel. Supabase fornece Auth (clientes e administradores), PostgreSQL com regras de acesso por usuário, favoritos, histórico de pedidos, imagens e configurações visuais. Não há servidor Python na publicação do GitHub Pages.
 
 Repositório: **FSLRV/demo-repository**. Domínio escolhido para o futuro: **https://mr1streetsp.com.br/**. Enquanto ele não é registrado, o endereço de publicação para testes é **https://fslrv.github.io/demo-repository/**. O endereço só fica ativo depois que a configuração Pages e o workflow de publicação tiverem sucesso.
 
@@ -56,7 +56,7 @@ Em **Gerenciar loja**, o administrador pode:
 - Cadastrar peças, fotos, tamanhos, estoque, preços e promoções.
 - Alterar o logo principal, o logo claro e a foto da capa.
 - Editar nome, textos, contatos, cores principal/de destaque/de fundo.
-- Consultar pedidos e os dados de entrega disponíveis no banco.
+- Conferir pedidos, informar o frete dos Correios, liberar o Pix, confirmar recebimento e registrar postagem/rastreio.
 
 Fotos enviadas podem ser PNG, JPG ou WebP, de até 2 MB. Prefira PNG transparente para logos. Os SVGs originais da MR1 permanecem no repositório; upload de SVG arbitrário não é aceito.
 
@@ -66,7 +66,7 @@ Fotos enviadas podem ser PNG, JPG ou WebP, de até 2 MB. Prefira PNG transparent
 | --- | --- |
 | `mr1_products`, `mr1_site_settings` | Leitura pública; edição apenas para administradores. |
 | `mr1_profiles`, `mr1_favorites` | Apenas o próprio cliente autenticado. |
-| `mr1_orders` | Leitura pelo dono do pedido ou administrador; nenhuma criação/alteração de valores ou status pago pelo navegador. |
+| `mr1_orders` | Leitura pelo dono ou administrador. Escrita direta bloqueada; funções do banco validam preços, estoque e cada transição de atendimento. |
 | `mr1_admins` | Sem escrita por clientes; autorização pelo responsável pelo projeto. |
 | `mr1-media` | Imagens públicas; envio apenas por administrador, em seu diretório. |
 
@@ -93,13 +93,24 @@ npx playwright install chromium
 npm run test:ui
 ```
 
-Os testes usam o SDK real com respostas REST controladas, cobrindo cadastro/confirmação, login, favoritos, sacola, edição de preços, logos, imagens e cores em computador e celular. Não criam contas nem cobranças reais.
+Os testes usam o SDK real com respostas REST e CEP controladas, cobrindo cadastro/confirmação, login, favoritos, sacola, frete grátis na capital, Correios sob consulta, pedido, Pix manual, confirmação, rastreio e edição da loja em computador e celular. Não criam contas nem cobranças reais.
 
 Para testar migrações e RLS, use um PostgreSQL **local e descartável** e defina `MR1_TEST_DATABASE_URL`. `npm run test:database` cria um banco temporário próprio, executa as migrações e verifica o bloqueio de acesso entre clientes, edição anônima, promoção indevida, manipulação de pedidos e uploads. O workflow de validação faz isso automaticamente com um serviço PostgreSQL isolado.
 
-## Limites atuais
+## Operação escolhida: Pix manual e Correios na agência
 
-O usuário informou utilizar outros provedores de pagamento e frete, mas ainda não informou os nomes. Compra e frete permanecem desativados. O site não inventa cotações nem marca pagamentos como aprovados. A implementação futura deve ficar em Supabase Edge Functions com segredos no servidor; `supabase/functions/store-api` contém uma resposta segura de serviço ainda não configurado.
+O cliente cria/confirma sua conta, informa o CEP na sacola e envia o pedido para análise. O banco usa o preço do catálogo, a identidade autenticada e uma chave de idempotência. O pedido aparece em **Minha conta → Meus pedidos** e em **Gerenciar loja → Pedidos recentes**.
+
+- **São Paulo capital:** frete gratuito. A prévia consulta o município no ViaCEP (IBGE `3550308`); a Grande São Paulo tem frete dos Correios. Essa consulta identifica o endereço e não calcula tarifas dos Correios.
+- **Demais destinos:** o pedido informa **frete a confirmar**, sem inventar valor ou prazo. Consulte os [preços e prazos dos Correios](https://www.correios.com.br/enviar/precos-e-prazos) com origem `05879-450`, destino, serviço e peso/dimensões reais da embalagem. A postagem é feita pessoalmente na agência.
+- **Pix:** em cada pedido no painel, confirme o município no Busca CEP, informe o frete e o prazo e cole um Pix gerado no banco **com valor fixo igual ao total das peças mais o frete**. Códigos com valor divergente, sem valor fixo ou com checksum inválido são recusados. A loja deve conferir o recebedor no banco. Não há chave Pix padrão nem conta de recebimento cadastrada no código.
+- **Estoque:** enviar uma solicitação não reserva peças. Ao liberar o Pix, o banco reserva a quantidade disponível numa transação; se faltar estoque, a liberação é recusada. O cancelamento de um pedido ainda não pago devolve a reserva uma única vez. Reservas ficam ativas até atendimento/cancelamento pelo lojista; não expiram automaticamente.
+- **Recebimento:** o cliente pode clicar em **Já paguei o Pix**. Isso apenas avisa a loja. No painel, confirme o pagamento **depois de verificar o crédito na conta bancária**; comprovante ou clique do cliente não aprovam a compra.
+- **Envio:** depois da confirmação, registre o código de rastreio fornecido na agência. O cliente consulta o código e acompanha o status em sua conta. Na entrega local, use **Confirmar entrega**.
+
+Use **Atualizar pedidos** no painel e na área do cliente para consultar mudanças. Não há envio automático de e-mail/WhatsApp de pedidos, pagamento automático, etiqueta ou integração de tarifas contratadas. Pedidos pagos não são cancelados por essa ação: devoluções e reembolsos precisam ser tratados com o cliente e o banco.
+
+O checkout depende do Supabase configurado. A migração `202611100001_manual_pix_orders.sql` é aplicada pela publicação existente, usando o secret já cadastrado. Não é necessário token de pagamento ou contrato dos Correios para este atendimento manual. A Edge Function de provedores automáticos permanece desativada como referência para uma integração futura.
 
 As peças, valores, estoque e medidas iniciais são exemplos. As imagens MR1 geradas e as demais fontes estão em `assets/SOURCES.md`. Confira o catálogo e as medidas reais das peças embaladas antes de ativar vendas. A origem de envio informada é **05879-450**.
 

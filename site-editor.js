@@ -34,6 +34,7 @@
   let loading = false;
   let saving = false;
   let requestVersion = 0;
+  let settingsRevision = 0;
 
   function safeImage(value) {
     const src = String(value || '').trim();
@@ -152,8 +153,10 @@
   }
 
   async function loadPublic() {
+    const revision = settingsRevision;
     try {
       const data = await request('/api/site/settings');
+      if (revision !== settingsRevision || saving) return;
       if (!data.settings || typeof data.settings !== 'object') throw new Error('As configurações da loja retornaram uma resposta inválida.');
       settings = data.settings; applySettings(settings);
       if (!dirty && !saving) populateForm(settings);
@@ -170,7 +173,7 @@
       const session = await request('/api/session');
       if (!session.authenticated) throw new Error('Entre no painel para editar as informações da loja.');
       const data = await request('/api/site/settings');
-      if (version !== requestVersion) return;
+      if (version !== requestVersion || saving || (dirty && !force)) return;
       settings = data.settings;
       if (!settings || typeof settings !== 'object') throw new Error('Não foi possível carregar as informações da loja.');
       populateForm(settings); applySettings(settings); feedback('');
@@ -196,6 +199,8 @@
     if (!form.reportValidity()) return;
     if (!settings) return feedback('Recarregue as informações antes de salvar.', true);
     saving = true;
+    settingsRevision++;
+    requestVersion++;
     const controls = [...form.elements];
     const disabled = controls.map((node) => node.disabled);
     controls.forEach((node) => { node.disabled = true; });

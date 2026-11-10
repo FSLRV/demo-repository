@@ -1,6 +1,7 @@
 /* Browser tests exercise the actual bundled Supabase SDK with controlled REST
    responses. PostgreSQL/RLS are independently tested against a real local DB. */
 const { chromium } = require('playwright');
+const { pix } = require('./pix-fixture.cjs');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const http = require('node:http');
@@ -27,6 +28,13 @@ async function mockSupabase(context) {
   let settings = JSON.parse(await fs.readFile('data/site-settings.json','utf8')).settings;
   const favorites = new Set();
   let uploads = 0, orderWrites = 0;
+  const orders = [];
+  await context.route('https://viacep.com.br/**', route => {
+    const cep = route.request().url().split('/')[4];
+    const city = cep === '05879450' ? {cep:'05879-450',localidade:'São Paulo',uf:'SP',ibge:'3550308'}
+      : cep === '06010000' ? {cep:'06010-000',localidade:'Osasco',uf:'SP',ibge:'3534401'} : {erro:true};
+    return route.fulfill({contentType:'application/json',body:JSON.stringify({...city,logradouro:'Rua de teste',bairro:'Bairro'})});
+  });
   await context.route('**/config.js', r=>r.fulfill({contentType:'text/javascript',body:`window.MR1_CONFIG={supabaseUrl:${JSON.stringify(fixtureURL)},supabasePublishableKey:'sb_publishable_fixture'};`}));
   await context.route(fixtureURL+'/**', async route=>{
     const request=route.request(), url=new URL(request.url()), method=request.method();
@@ -40,6 +48,24 @@ async function mockSupabase(context) {
     }
     if(url.pathname==='/auth/v1/user') return actor ? json(account(actor.email)) : json({message:'No session'},401);
     if(url.pathname==='/auth/v1/logout') return route.fulfill({status:204});
+    if(url.pathname.endsWith('/rpc/mr1_request_order')) {
+      assert.ok(actor);assert.ok(body.request_id);orderWrites++;
+      const order={id:'55555555-5555-4555-8555-555555555555',customer_id:actor.id,status:'awaiting_review',created_at:new Date().toISOString(),manual_flow:true,shipping_pending:true,
+        items:body.lines.map(line=>({...line,name:'Camiseta Oversized Essential',unitPrice:14990})),customer:body.details,subtotal_cents:14990,shipping_cents:0,total_cents:14990};
+      orders.push(order);return json({orderId:order.id,manual:true});
+    }
+    if(url.pathname.endsWith('/rpc/mr1_prepare_manual_payment')) {
+      assert.equal(actor?.email,'owner@example.test');assert.equal(body.freight_cents,2390);assert.equal(body.confirmed,true);
+      const order=orders.find(o=>o.id===body.order_id);assert.ok(order);assert.equal(body.pix,pix(173.8));
+      Object.assign(order,{status:'awaiting_payment',shipping_pending:false,shipping_cents:2390,total_cents:17380,pix_payload:body.pix,shipping_service:{company:'Correios',deliveryDays:body.delivery_days}});return json(null);
+    }
+    if(url.pathname.endsWith('/rpc/mr1_report_pix')) {
+      const order=orders.find(o=>o.id===body.order_id);assert.equal(actor.id,order.customer_id);assert.equal(order.status,'awaiting_payment');order.status='payment_reported';return json(null);
+    }
+    if(url.pathname.endsWith('/rpc/mr1_manage_manual_order')) {
+      assert.equal(actor?.email,'owner@example.test');assert.equal(body.confirmed,true);
+      const order=orders.find(o=>o.id===body.order_id);assert.ok(order);order.status=body.action;order.tracking_code=body.tracking;return json(null);
+    }
     if(url.pathname.endsWith('/rpc/mr1_is_admin')) return json(actor?.email==='owner@example.test');
     if(url.pathname.endsWith('/rpc/mr1_update_site_settings')) {
       if(actor?.email!=='owner@example.test') return json({code:'42501'},403);
@@ -65,7 +91,9 @@ async function mockSupabase(context) {
     }
     if(url.pathname==='/rest/v1/mr1_orders') {
       if(method!=='GET'){orderWrites++;return json({code:'42501'},403);}
-      return json([]);
+      const id=url.searchParams.get('id')?.replace(/^eq\./,'');
+      const visible=orders.filter(order=>actor?.email==='owner@example.test'||order.customer_id===actor?.id);
+      return json(id ? visible.find(order=>order.id===id) || null : visible);
     }
     if(url.pathname.startsWith('/storage/v1/object/public/'))return route.fulfill({contentType:'image/png',body:png});
     if(url.pathname.startsWith('/storage/v1/object/')){assert.equal(actor?.email,'owner@example.test');uploads++;return json({Key:url.pathname.split('/object/')[1]});}
@@ -109,9 +137,25 @@ async function mockSupabase(context) {
       await page.locator('#customer-auth-form').waitFor();await page.locator('#account-close').click();
       await page.locator('.product-image-button').first().click();await page.locator('[data-size="M"]').click();await page.locator('[data-add-product]').click();
       await page.locator('#shipping-cep').fill('05879450');await page.locator('#shipping-form button').click();
-      await page.waitForFunction(()=>document.querySelector('#shipping-result')?.textContent.includes('ainda não foi ativado'));
-      assert.equal(await page.locator('.shipping-option').count(),0);assert.equal(fixture.orderWrites,0);
-      await page.locator('#cart-close').click();await page.locator('#admin-button').click();
+      await page.locator('[data-shipping-option="mr1-capital"]').waitFor();
+      assert.match(await page.locator('#shipping-result').innerText(),/R\$\s*0,00/);
+      await page.locator('#shipping-cep').fill('12345999');await page.locator('#shipping-form button').click();
+      await page.waitForFunction(()=>document.querySelector('#shipping-result')?.textContent.includes('não encontrado'));
+      assert.equal(await page.locator('.shipping-option').count(),0);
+      await page.locator('#shipping-cep').fill('06010000');await page.locator('#shipping-form button').click();
+      await page.locator('[data-shipping-option="correios-counter"]').check();
+      assert.match(await page.locator('#shipping-result').innerText(),/A confirmar/);
+      assert.match(await page.locator('#cart-total').innerText(),/frete/);assert.equal(fixture.orderWrites,0);
+      await page.locator('#checkout-button').click();
+      await page.locator('#customer-email').fill('client@example.test');await page.locator('#customer-password').fill('Fixture-password-123');
+      await page.locator('#customer-auth-form button[type=submit]').click();await page.locator('[data-account-tab="orders"]').waitFor();
+      await page.locator('#account-close').click();await page.locator('#cart-button').click();await page.locator('#checkout-button').click();
+      await page.locator('#checkout-form input[name=number]').fill('123');await page.locator('#checkout-form input[name=phone]').fill('11999999999');
+      await page.locator('#checkout-submit').click();await page.locator('.customer-order').waitFor();
+      assert.match(await page.locator('.customer-order').innerText(),/Aguardando conferência/);assert.equal(fixture.orderWrites,1);
+      assert.equal(await page.locator('#cart-count').innerText(),'0');
+      await page.locator('[data-account-tab="profile"]').click();await page.locator('[data-account-logout]').click();
+      await page.locator('#customer-auth-form').waitFor();await page.locator('#account-close').click();await page.locator('#admin-button').click();
       await page.locator('#admin-email').fill('owner@example.test');await page.locator('#admin-password').fill('Fixture-password-123');
       await page.locator('#admin-auth-form button[type=submit]').click();await page.locator('#admin-workspace').waitFor();
       await page.locator('#site-settings-form input[name=brandName]').waitFor();
@@ -132,7 +176,31 @@ async function mockSupabase(context) {
       await page.locator('#admin-close').click();await page.reload({waitUntil:'networkidle'});
       await page.waitForFunction(()=>document.title==='MR1 Teste');
       assert.equal(await page.locator('.product-card').count(),6);
-      console.log(`PASS UI ${width}px: SDK Supabase, cadastro/confirmação, login, favoritos, carrinho, frete bloqueado, editor, upload e persistência.`);
+      await page.locator('#admin-button').click();await page.locator('[data-order-detail]').first().click();
+      await page.locator('[data-prepare-order] input[name=freight]').fill('23.90');await page.locator('[data-prepare-order] input[name=days]').fill('5');
+      await page.locator('[data-prepare-order] textarea[name=pix]').fill(pix(173.8));await page.locator('[data-prepare-order] input[name=confirmed]').check();
+      await page.locator('[data-prepare-order] button[type=submit]').click();
+      await page.waitForFunction(()=>document.querySelector('#order-detail-content')?.textContent.includes('Pix disponível'));
+      await page.locator('#order-detail-close').click();await page.locator('#admin-logout').click();await page.locator('#admin-close').click();
+      await page.locator('#account-button').click();await page.locator('#customer-email').fill('client@example.test');await page.locator('#customer-password').fill('Fixture-password-123');
+      await page.locator('#customer-auth-form button[type=submit]').click();await page.locator('.pix-payment textarea').waitFor();
+      assert.equal(await page.locator('.pix-payment textarea').inputValue(),pix(173.8));
+      await page.locator('[data-report-pix]').click();await page.waitForFunction(()=>document.querySelector('.customer-order-status')?.textContent.includes('Pagamento informado'));
+      await page.locator('[data-account-tab="profile"]').click();await page.locator('[data-account-logout]').click();await page.locator('#customer-auth-form').waitFor();await page.locator('#account-close').click();
+      await page.locator('#admin-button').click();await page.locator('#admin-email').fill('owner@example.test');await page.locator('#admin-password').fill('Fixture-password-123');
+      await page.locator('#admin-auth-form button[type=submit]').click();await page.locator('[data-order-detail]').first().click();
+      await page.locator('[data-manage-order] select[name=action]').selectOption('paid');await page.locator('[data-manage-order] input[name=confirmed]').check();await page.locator('[data-manage-order] button[type=submit]').click();
+      await page.locator('[data-manage-order] input[name=tracking]').waitFor();
+      await page.locator('[data-manage-order] select[name=action]').selectOption('shipped');await page.locator('[data-manage-order] input[name=tracking]').fill('AA123456789BR');
+      await page.locator('[data-manage-order] input[name=confirmed]').check();await page.locator('[data-manage-order] button[type=submit]').click();
+      await page.waitForFunction(()=>document.querySelector('#order-detail-content')?.textContent.includes('Enviado'));
+      await page.locator('#order-detail-close').click();await page.locator('#admin-logout').click();await page.locator('#admin-close').click();
+      await page.locator('#account-button').click();await page.locator('#customer-email').fill('client@example.test');await page.locator('#customer-password').fill('Fixture-password-123');
+      await page.locator('#customer-auth-form button[type=submit]').click();await page.locator('[data-account-tab=orders]').click();await page.getByText('AA123456789BR',{exact:true}).waitFor();
+      assert.deepEqual(errors,[]);
+      await fs.mkdir('/tmp/mr1-manual-preview',{recursive:true});
+      await page.screenshot({path:`/tmp/mr1-manual-preview/orders-${width}.png`,fullPage:true});
+      console.log(`PASS UI ${width}px: conta, favoritos, capital grátis, CEP inválido, Correios sob consulta, pedido, Pix manual, confirmação, rastreio e edição da loja.`);
       await context.close();
     }
   } finally {await browser.close();await new Promise(r=>server.close(r));}

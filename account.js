@@ -8,7 +8,7 @@
 
   const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const money = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number.isFinite(Number(value)) ? Number(value) : 0);
-  const statusLabels = {
+  const statusLabels = { ...window.MR1Commerce.statuses,
     creating: 'Preparando pagamento', pending: 'Aguardando pagamento', payment_pending: 'Aguardando pagamento',
     payment_in_process: 'Pagamento em análise', payment_unconfirmed: 'Pagamento em verificação', paid: 'Pagamento confirmado',
     paid_review: 'Pagamento recebido — em conferência', cancelled: 'Cancelado', expired: 'Expirado', rejected: 'Pagamento recusado',
@@ -181,7 +181,7 @@
     if (ordersError) return `<div class="account-empty"><h3>Não foi possível carregar seus pedidos.</h3><p>${escape(ordersError)}</p><button type="button" class="text-button" data-account-retry="orders">Tentar novamente</button></div>`;
     if (!ordersLoaded) return '<p class="account-loading" role="status">Buscando seus pedidos...</p>';
     if (!orders.length) return '<div class="account-empty"><span aria-hidden="true">↗</span><h3>Seu primeiro look está esperando.</h3><p>Os pedidos feitos enquanto você estiver conectado aparecerão aqui. Você ainda não tem pedidos nesta conta.</p><button type="button" class="button button-dark" data-account-explore>EXPLORAR A COLEÇÃO <span aria-hidden="true">↗</span></button></div>';
-    return `<div class="customer-orders">${orders.map((order) => `<article class="customer-order"><header><div><small>PEDIDO ${escape(String(order.id || '').slice(0, 8).toUpperCase())}</small><p>${escape(dateLabel(order.created))}</p></div><span class="customer-order-status${order.status === 'paid' ? ' is-paid' : ''}">${escape(statusLabels[order.status] || 'Em acompanhamento')}</span></header><div class="customer-order-total"><span>${Array.isArray(order.items) ? order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0) : 0} peça(s)</span><strong>${money(order.total)}</strong></div><details><summary>Ver peças e valores</summary><ul>${(Array.isArray(order.items) ? order.items : []).map((item) => `<li><div><strong>${escape(item.name || 'Peça MR1')}</strong><span>Tamanho ${escape(item.size)} · Quantidade ${escape(item.quantity)}</span></div><b>${money(Number(item.unitPrice || 0) * Number(item.quantity || 0))}</b></li>`).join('')}</ul><div class="customer-order-costs"><p><span>Subtotal</span><span>${money(order.subtotal)}</span></p><p><span>Entrega</span><span>${money(order.shipping)}</span></p></div></details>${order.status === 'paid_review' ? '<p class="customer-order-note">O pagamento foi recebido. A loja está conferindo o pedido antes da confirmação final.</p>' : ''}</article>`).join('')}</div><button type="button" class="text-button" data-account-retry="orders">Atualizar meus pedidos</button>`;
+    return `<div class="customer-orders">${orders.map((order) => `<article class="customer-order"><header><div><small>PEDIDO ${escape(String(order.id || '').slice(0, 8).toUpperCase())}</small><p>${escape(dateLabel(order.created))}</p></div><span class="customer-order-status${order.status === 'paid' ? ' is-paid' : ''}">${escape(statusLabels[order.status] || 'Em acompanhamento')}</span></header><div class="customer-order-total"><span>${Array.isArray(order.items) ? order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0) : 0} peça(s)</span><strong>${money(order.total)}${order.shippingPending ? ' + frete a confirmar' : ''}</strong></div><details><summary>Ver peças e valores</summary><ul>${(Array.isArray(order.items) ? order.items : []).map((item) => `<li><div><strong>${escape(item.name || 'Peça MR1')}</strong><span>Tamanho ${escape(item.size)} · Quantidade ${escape(item.quantity)}</span></div><b>${money(Number(item.unitPrice || 0) * Number(item.quantity || 0))}</b></li>`).join('')}</ul><div class="customer-order-costs"><p><span>Subtotal</span><span>${money(order.subtotal)}</span></p><p><span>Entrega</span><span>${order.shippingPending ? 'A confirmar' : money(order.shipping)}</span></p></div></details>${window.MR1Commerce.customerMarkup(order)}${order.status === 'paid_review' ? '<p class="customer-order-note">O pagamento foi recebido. A loja está conferindo o pedido antes da confirmação final.</p>' : ''}</article>`).join('')}</div><button type="button" class="text-button" data-account-retry="orders">Atualizar meus pedidos</button>`;
   }
 
   function renderFavorites() {
@@ -337,6 +337,7 @@
     authBusy = false;
     view.querySelectorAll('input[type="password"]').forEach((input) => { input.value = ''; });
   });
+  document.addEventListener('mr1:order-updated', () => { ordersLoaded = false; if (customer.authenticated && dialog.open && activeTab === 'orders') loadTab('orders'); });
   document.addEventListener('mr1:open-account', (event) => openAccount(event.detail?.tab));
   const grid = $('product-grid');
   if (grid) new MutationObserver(updateFavoriteButtons).observe(grid, { childList: true, subtree: true });

@@ -5,7 +5,7 @@
   const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const categories = { camisetas: 'Camisetas', moletons: 'Moletons', calcas: 'Calças', acessorios: 'Acessórios' };
   const providerLabels = {
-    payment: { mercadopago: 'Mercado Pago', stripe: 'Stripe', pagbank: 'PagBank', pagseguro: 'PagSeguro', asaas: 'Asaas', pagarme: 'Pagar.me' },
+    payment: { pixmanual: 'Pix copia e cola', mercadopago: 'Mercado Pago', stripe: 'Stripe', pagbank: 'PagBank', pagseguro: 'PagSeguro', asaas: 'Asaas', pagarme: 'Pagar.me' },
     shipping: { melhorenvio: 'Melhor Envio', correios: 'Correios', frenet: 'Frenet', kangu: 'Kangu', jadlog: 'Jadlog', loggi: 'Loggi' }
   };
   const CART_KEY = 'mr1-streetwear.cart.v1';
@@ -31,7 +31,7 @@
   let checkoutAttempt = read(CHECKOUT_KEY, null, sessionStorage);
   let toastTimer;
   let orderDetailRequest = 0;
-  const orderStatuses = { paid: 'Pago', paid_review: 'Pagamento recebido — revisar estoque', pending: 'Aguardando pagamento', payment_pending: 'Aguardando pagamento', payment_in_process: 'Pagamento em análise', payment_unconfirmed: 'Pagamento em verificação', creating: 'Preparando pagamento', cancelled: 'Cancelado', expired: 'Expirado', rejected: 'Recusado', refunded: 'Estornado', charged_back: 'Pagamento contestado' };
+  const orderStatuses = { ...window.MR1Commerce.statuses, paid: 'Pago', paid_review: 'Pagamento recebido — revisar estoque', pending: 'Aguardando pagamento', payment_pending: 'Aguardando pagamento', payment_in_process: 'Pagamento em análise', payment_unconfirmed: 'Pagamento em verificação', creating: 'Preparando pagamento', cancelled: 'Cancelado', expired: 'Expirado', rejected: 'Recusado', refunded: 'Estornado', charged_back: 'Pagamento contestado' };
   function providerLabel(kind) {
     const key = String(config?.[kind]?.provider || '').toLowerCase().replace(/[\s_-]/g, '');
     return providerLabels[kind]?.[key] || (kind === 'payment' ? 'Provedor de pagamento' : 'Provedor de frete');
@@ -193,11 +193,11 @@
       return `<article class="cart-item"><img class="cart-item-image" src="${escape(safeImage(product.image))}" alt="${escape(product.name)}" width="80" height="100"><div class="cart-item-info"><h3>${escape(product.name)}</h3><p>Tamanho ${escape(line.size)}</p><strong>${money(product.price)}</strong><div class="quantity-control"><button data-cart-action="decrease" data-index="${index}" aria-label="Diminuir quantidade de ${escape(product.name)}">−</button><span aria-label="Quantidade">${line.quantity}</span><button data-cart-action="increase" data-index="${index}" aria-label="Aumentar quantidade de ${escape(product.name)}">+</button></div></div><button class="remove-item" data-cart-action="remove" data-index="${index}" aria-label="Remover ${escape(product.name)}">×</button></article>`;
     }).join('') : '<div class="empty-state"><span class="empty-cart-icon" aria-hidden="true">↗</span><h3>Seu próximo look começa aqui.</h3><p>Escolha suas peças favoritas e coloque na sacola.</p><button class="button button-dark" data-continue-shopping>EXPLORAR A COLEÇÃO</button></div>';
     $('cart-subtotal').textContent = money(subtotal());
-    $('cart-total').textContent = money(subtotal() + (shipping?.price || 0));
+    $('cart-total').textContent = shipping?.pricePending ? money(subtotal()) + ' + frete' : money(subtotal() + (shipping?.price || 0));
     $('checkout-button').disabled = !cart.length;
-    $('checkout-button').textContent = !cart.length ? 'ADICIONE UMA PEÇA' : shipping ? 'CONTINUAR PARA PAGAMENTO ↗' : 'CONTINUAR PEDIDO ↗';
+    $('checkout-button').textContent = !cart.length ? 'ADICIONE UMA PEÇA' : shipping ? 'ENVIAR PARA ANÁLISE ↗' : 'CONTINUAR PEDIDO ↗';
     const note = document.querySelector('.checkout-note');
-    if (note) note.textContent = shipping ? 'O valor final será conferido pelo servidor antes do pagamento.' : 'Calcule e selecione a entrega para continuar.';
+    if (note) note.textContent = shipping ? 'A loja confere a entrega e libera o Pix em Minha conta → Meus pedidos.' : 'Calcule e selecione a entrega para continuar.';
   }
   function changeCart(action, index) {
     const line = cart[index];
@@ -238,9 +238,9 @@
     try {
       const data = await api('/api/shipping', { method: 'POST', body: { cep, items: cartItems() }, signal: shippingController.signal });
       if (version !== shippingVersion || fingerprint !== cartFingerprint()) return;
-      shippingQuotes = (data.quotes || []).filter((quote) => quote && quote.id && Number.isFinite(Number(quote.price)) && Number(quote.price) >= 0).map((quote) => ({ ...quote, price: Number(quote.price), cep }));
+      shippingQuotes = (data.quotes || []).filter((quote) => quote && quote.id && Number.isFinite(Number(quote.price)) && Number(quote.price) >= 0).map((quote) => ({ ...quote, price: Number(quote.price), cep, destination: data.destination }));
       if (!shippingQuotes.length) throw new Error('Nenhuma opção de entrega está disponível para esse CEP.');
-      $('shipping-result').innerHTML = `<fieldset class="shipping-options"><legend>Escolha a entrega</legend>${shippingQuotes.map((quote) => `<label class="shipping-option"><input type="radio" name="shipping-option" value="${escape(quote.id)}" data-shipping-option="${escape(quote.id)}"><span><strong>${escape(quote.company || '')} ${escape(quote.name || 'Entrega')}</strong><small>${escape(quote.deliveryDays ?? quote.days ?? 'Prazo informado pelo provedor')} dias úteis</small></span><b>${money(quote.price)}</b></label>`).join('')}</fieldset><p class="shipping-provider-note">Cotação via ${escape(providerLabel('shipping'))} · Saída de 05879-450. ${config?.shipping?.sandbox ? 'Ambiente de testes do provedor.' : 'Prazos informados pela transportadora.'}</p>`;
+      $('shipping-result').innerHTML = `<fieldset class="shipping-options"><legend>Escolha a entrega</legend>${shippingQuotes.map((quote) => `<label class="shipping-option"><input type="radio" name="shipping-option" value="${escape(quote.id)}" data-shipping-option="${escape(quote.id)}"><span><strong>${escape(quote.company || '')} ${escape(quote.name || 'Entrega')}</strong><small>${escape(quote.deliveryLabel || 'Prazo a confirmar pela loja')}</small></span><b>${quote.pricePending ? 'A confirmar' : money(quote.price)}</b></label>`).join('')}</fieldset><p class="shipping-provider-note">${escape(data.destination?.city || '')} / ${escape(data.destination?.state || '')} · Saída de 05879-450. Envie o pedido para receber o valor final e o Pix.</p>`;
     } catch (error) {
       if (error.name === 'AbortError' || version !== shippingVersion) return;
       $('shipping-result').textContent = error.message;
@@ -251,10 +251,17 @@
     if (!shipping || quoteExpired(shipping)) return toast('Calcule a entrega e selecione uma opção válida antes de continuar.');
     try { config = await api('/api/config'); } catch (error) { return toast(error.message); }
     if (!config.checkoutReady) return toast('O pagamento ainda não foi ativado pela loja. Não houve cobrança nem criação de pedido.');
-    const introduction = $('checkout-form')?.querySelector('.checkout-intro');
-    if (introduction) introduction.textContent = config.payment?.sandbox ? 'Ambiente de testes de pagamento. Este pedido não representa uma compra real. Informe os dados de teste para continuar ao provedor.' : 'Informe os dados de entrega. Na próxima etapa, você será direcionado ao provedor de pagamento para escolher como pagar.';
-    const cep = $('checkout-form')?.elements.namedItem('cep');
-    if (cep) cep.value = shipping.cep.slice(0, 5) + '-' + shipping.cep.slice(5);
+    const account = await api('/api/account/session');
+    if (!account.authenticated) {
+      $('cart-drawer').close(); window.MR1Account.open('orders');
+      return toast('Entre ou crie sua conta. Depois volte à sacola para enviar o pedido.');
+    }
+    const form = $('checkout-form');
+    const values = { ...shipping.destination, name: account.name, email: account.email, cep: shipping.cep.slice(0, 5) + '-' + shipping.cep.slice(5) };
+    for (const [name,value] of Object.entries(values)) { const input = form.elements.namedItem(name); if (input && value) input.value = value; }
+    form.elements.namedItem('city').readOnly = true;
+    form.elements.namedItem('email').readOnly = true;
+    form.elements.namedItem('state').disabled = true;
     if ($('checkout-error')) $('checkout-error').textContent = '';
     showDialog($('checkout-dialog'));
   }
@@ -268,14 +275,17 @@
     const fingerprint = JSON.stringify(payload);
     if (!checkoutAttempt || checkoutAttempt.fingerprint !== fingerprint) checkoutAttempt = { fingerprint, key: crypto.randomUUID(), items: payload.items };
     try { sessionStorage.setItem(CHECKOUT_KEY, JSON.stringify(checkoutAttempt)); } catch { /* In-memory key still prevents repeat submits in this session. */ }
-    const button = $('checkout-submit'); button.disabled = true; button.textContent = 'PREPARANDO PAGAMENTO...'; $('checkout-error').textContent = '';
+    const button = $('checkout-submit'); button.disabled = true; button.textContent = 'ENVIANDO PEDIDO...'; $('checkout-error').textContent = '';
     try {
       const result = await api('/api/checkout', { method: 'POST', body: payload, headers: { 'Idempotency-Key': checkoutAttempt.key } });
-      const url = new URL(result.checkoutUrl);
-      if (url.protocol !== 'https:' || !['mercadopago.com.br', 'www.mercadopago.com.br', 'sandbox.mercadopago.com.br'].includes(url.hostname)) throw new Error('O provedor retornou um endereço de pagamento inválido. Entre em contato com a loja.');
-      checkoutAttempt = { ...checkoutAttempt, orderId: result.orderId, orderToken: result.orderToken };
-      try { sessionStorage.setItem(CHECKOUT_KEY, JSON.stringify(checkoutAttempt)); } catch { /* Server idempotency remains authoritative. */ }
-      window.location.assign(url.href);
+      if (!result.manual || !result.orderId) throw new Error('Não foi possível confirmar o envio do pedido. Tente novamente com a mesma sacola.');
+      checkoutAttempt = { ...checkoutAttempt, orderId: result.orderId };
+      try { sessionStorage.removeItem(CHECKOUT_KEY); } catch { /* The submitted request remains in the account history. */ }
+      cart = []; persistCart(); invalidateShipping(); renderCart();
+      $('checkout-dialog').close(); $('cart-drawer').close();
+      window.MR1Account.open('orders');
+      document.dispatchEvent(new CustomEvent('mr1:order-updated', { detail: { id: result.orderId } }));
+      toast('Pedido enviado. Acompanhe a conferência e o Pix em Meus pedidos.');
     } catch (error) {
       $('checkout-error').textContent = error.message;
       if (error.orderId && error.orderToken) {
@@ -289,7 +299,7 @@
         invalidateShipping('A sacola ou a cotação mudou. Calcule a entrega novamente antes de continuar.');
         if (['insufficient_stock', 'stock_unavailable', 'product_unavailable', 'invalid_cart'].includes(error.code)) loadProducts().catch(() => {});
       }
-    } finally { button.disabled = false; button.textContent = 'IR PARA O PAGAMENTO ↗'; renderCart(); }
+    } finally { button.disabled = false; button.textContent = 'ENVIAR PEDIDO ↗'; renderCart(); }
   }
   function renderSession() {
     if ($('admin-auth-section')) $('admin-auth-section').hidden = Boolean(session.authenticated);
@@ -307,7 +317,7 @@
   function renderIntegrationStatus() {
     if ($('preview-note') && config) $('preview-note').hidden = !config.preview;
     if (!$('integration-status') || !config) return;
-    $('integration-status').innerHTML = `<strong>Integrações da loja</strong><p>Pagamento · ${escape(providerLabel('payment'))}: ${config.payment?.configured ? 'credenciais configuradas' : 'aguardando credenciais'}${config.payment?.sandbox ? ' (ambiente de testes)' : ''}.</p><p>Frete · ${escape(providerLabel('shipping'))}: ${config.shipping?.configured ? 'credenciais configuradas' : 'aguardando credenciais'}${config.shipping?.sandbox ? ' (ambiente de testes)' : ''}.</p><p>Endereço público HTTPS: ${config.publicUrlConfigured ? 'configurado' : 'aguardando configuração'}.</p><small>O login e o catálogo usam Supabase. Integrações financeiras precisam de validação com os provedores. Confira também o peso e as dimensões de cada peça.</small>`;
+    $('integration-status').innerHTML = `<strong>Como atender pedidos</strong><p>Pix copia e cola: abra um pedido, confira a entrega e cole o Pix com o valor total. Confirme o pagamento somente após conferir o crédito no banco.</p><p>São Paulo capital: entrega grátis. Demais destinos: consulte os Correios e informe valor e prazo antes de liberar o Pix. Após postar na agência, registre o rastreio.</p><small>Os clientes acompanham o atendimento em Minha conta → Meus pedidos. Use “Atualizar pedidos” para consultar novas solicitações.</small>`;
   }
   async function loadSession() { session = await api('/api/session'); renderSession(); }
   async function openAdmin() {
@@ -382,13 +392,14 @@
     if (!$('admin-orders') || !session.authenticated) return;
     try {
       const data = await api('/api/admin/orders', { authenticated: true });
-      $('admin-orders').innerHTML = data.orders?.length ? data.orders.map((order) => `<article class="admin-order"><button type="button" data-order-detail="${escape(order.id || order.orderId)}">Pedido ${escape(String(order.id || order.orderId).slice(0, 8))} ↗</button><span>${escape(orderStatuses[order.status] || 'Em acompanhamento')}</span><b>${money(Number(order.total || order.totalAmount || 0))}</b></article>`).join('') : '<p>Nenhum pedido recebido.</p>';
+      $('admin-orders').innerHTML = data.orders?.length ? data.orders.map((order) => `<article class="admin-order"><button type="button" data-order-detail="${escape(order.id || order.orderId)}">Pedido ${escape(String(order.id || order.orderId).slice(0, 8))} ↗</button><span>${escape(orderStatuses[order.status] || 'Em acompanhamento')}</span><b>${money(Number(order.total || order.totalAmount || 0))}${order.shippingPending ? ' + frete a confirmar' : ''}</b></article>`).join('') : '<p>Nenhum pedido recebido.</p>';
     } catch (error) { $('admin-orders').textContent = error.message; }
   }
   async function openOrderDetail(id) {
     if (!session.authenticated || !$('order-detail-dialog')) return;
     const request = ++orderDetailRequest;
     const content = $('order-detail-content');
+    content.dataset.orderId = id;
     content.textContent = 'Consultando os dados do pedido...';
     showDialog($('order-detail-dialog'));
     try {
@@ -400,7 +411,7 @@
       const service = order.shippingService || {};
       const created = Number(order.created);
       const date = created ? new Date(created > 1e12 ? created : created * 1000).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) : '';
-      content.innerHTML = `<div class="order-detail-summary"><p class="eyebrow">PEDIDO ${escape(String(order.id).slice(0, 8))}</p><h3>${escape(orderStatuses[order.status] || 'Em acompanhamento')}</h3><p>${escape(date)}</p></div><section><h3>Cliente</h3><dl class="order-detail-fields"><dt>Nome</dt><dd>${escape(customer.name)}</dd><dt>E-mail</dt><dd>${escape(customer.email)}</dd><dt>Celular</dt><dd>${escape(customer.phone)}</dd></dl></section><section><h3>Entrega</h3><p>${escape(address.street)}, ${escape(address.number)}${address.complement ? ' — ' + escape(address.complement) : ''}<br>${escape(address.neighborhood)} · ${escape(address.city)} / ${escape(address.state)}<br>CEP ${escape(address.cep)}</p><p>${escape(service.company || '')} ${escape(service.name || '')}</p></section><section><h3>Peças</h3><div class="order-detail-items">${(order.items || []).map((item) => `<article><div><strong>${escape(item.name || item.id)}</strong><p>Tamanho ${escape(item.size)} · Quantidade ${escape(item.quantity)}</p></div><b>${money(Number(item.unitPrice || 0) * Number(item.quantity || 0))}</b></article>`).join('')}</div></section><div class="order-detail-totals"><p><span>Subtotal</span><strong>${money(Number(order.subtotal || 0))}</strong></p><p><span>Frete</span><strong>${money(Number(order.shipping || 0))}</strong></p><p><span>Total</span><strong>${money(Number(order.total || 0))}</strong></p></div>`;
+      content.innerHTML = `<div class="order-detail-summary"><p class="eyebrow">PEDIDO ${escape(String(order.id).slice(0, 8))}</p><h3>${escape(orderStatuses[order.status] || 'Em acompanhamento')}</h3><p>${escape(date)}</p></div><section><h3>Cliente</h3><dl class="order-detail-fields"><dt>Nome</dt><dd>${escape(customer.name)}</dd><dt>E-mail</dt><dd>${escape(customer.email)}</dd><dt>Celular</dt><dd>${escape(customer.phone)}</dd></dl></section><section><h3>Entrega</h3><p>${escape(address.street)}, ${escape(address.number)}${address.complement ? ' — ' + escape(address.complement) : ''}<br>${escape(address.neighborhood)} · ${escape(address.city)} / ${escape(address.state)}<br>CEP ${escape(address.cep)}</p><p>${escape(service.company || '')} ${escape(service.name || '')}</p></section><section><h3>Peças</h3><div class="order-detail-items">${(order.items || []).map((item) => `<article><div><strong>${escape(item.name || item.id)}</strong><p>Tamanho ${escape(item.size)} · Quantidade ${escape(item.quantity)}</p></div><b>${money(Number(item.unitPrice || 0) * Number(item.quantity || 0))}</b></article>`).join('')}</div></section><div class="order-detail-totals"><p><span>Subtotal</span><strong>${money(Number(order.subtotal || 0))}</strong></p><p><span>Frete</span><strong>${order.shippingPending ? 'A confirmar' : money(Number(order.shipping || 0))}</strong></p><p><span>Total</span><strong>${money(Number(order.total || 0))}${order.shippingPending ? ' + frete a confirmar' : ''}</strong></p></div>${window.MR1Commerce.adminMarkup(order)}`;
     } catch (error) { if (request === orderDetailRequest) content.textContent = error.message; }
   }
   async function checkOrderReturn() {
@@ -464,7 +475,12 @@
   $('shipping-form').addEventListener('submit', quoteShipping);
   $('shipping-cep').addEventListener('input', () => { const digits = $('shipping-cep').value.replace(/\D/g, '').slice(0, 8); $('shipping-cep').value = digits.length > 5 ? digits.slice(0, 5) + '-' + digits.slice(5) : digits; invalidateShipping('Calcule a entrega para o CEP informado.'); renderCart(); });
   $('shipping-result').addEventListener('change', (event) => { if (event.target.matches('[data-shipping-option]')) selectShipping(event.target.dataset.shippingOption); });
-  $('checkout-button').addEventListener('click', openCheckout);
+  $('checkout-button').addEventListener('click', () => openCheckout().catch((error) => toast(error.message)));
+  $('refresh-admin-orders')?.addEventListener('click', loadOrders);
+  document.addEventListener('mr1:order-updated', (event) => {
+    loadOrders();
+    if ($('order-detail-dialog').open && $('order-detail-content').dataset.orderId === event.detail?.id) openOrderDetail(event.detail.id);
+  });
   $('checkout-close')?.addEventListener('click', () => $('checkout-dialog').close());
   $('checkout-form')?.addEventListener('submit', submitCheckout);
   $('checkout-error')?.addEventListener('click', (event) => { const button = event.target.closest('[data-check-pending-order]'); if (button) checkPendingOrder(button); });

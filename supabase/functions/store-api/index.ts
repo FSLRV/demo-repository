@@ -1,6 +1,6 @@
-// Payment/shipping providers were not identified by the owner. Never invent a
-// quote or accept a client-provided price/paid status. Implement the selected
-// provider here using Edge Function secrets before enabling checkout.
+// The active store uses reviewed requests and manual Pix via database RPCs.
+// This optional automatic-provider endpoint stays disabled: Correios posting
+// and bank receipt verification are performed by the owner.
 Deno.serve((request: Request) => {
   const origin = Deno.env.get('MR1_SITE_ORIGIN') || 'https://fslrv.github.io';
   const headers = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': origin,

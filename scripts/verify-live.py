@@ -9,13 +9,13 @@ from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
 site=os.environ['PAGES_URL'].rstrip('/')+'/'
-result={'live':False,'catalogRead':False,'settingsRead':False,'privateOrdersBlocked':False}
+result={'live':False,'catalogRead':False,'settingsRead':False,'privateOrdersBlocked':False,'manualStorefront':False,'cepLookup':False}
 try:
     for attempt in range(8):
         try:
             with urlopen(site+'?deployment='+os.environ['GITHUB_RUN_ID'],timeout=20) as response:
                 html=response.read().decode()
-            if 'backend.js' in html and 'account-dialog' in html: break
+            if 'manual-commerce.js' in html and 'account-dialog' in html: break
         except (HTTPError,URLError): pass
         time.sleep(5)
     else: raise RuntimeError('O site ainda não respondeu com a versão publicada.')
@@ -38,6 +38,17 @@ try:
     except HTTPError as error:
         if error.code not in (401,403): raise
         result['privateOrdersBlocked']=True
+    with urlopen(urljoin(site,'manual-commerce.js')+'?deployment='+os.environ['GITHUB_RUN_ID'],timeout=20) as response:
+        manual_source=response.read().decode()
+    if 'mr1:order-updated' not in manual_source or 'Pix copia e cola' not in manual_source:
+        raise RuntimeError('A versão de pedidos manuais ainda não foi publicada.')
+    result['manualStorefront']=True
+    for cep,municipality in [('05879450','3550308'),('06010000','3534401')]:
+        with urlopen('https://viacep.com.br/ws/'+cep+'/json/',timeout=20) as response:
+            address=json.load(response)
+        if address.get('ibge')!=municipality:
+            raise RuntimeError('A consulta de CEP não confirmou os municípios esperados.')
+    result['cepLookup']=True
     result['live']=True
     print('Site e leitura pública Supabase verificados; pedidos privados bloqueados.')
 except Exception as error:

@@ -90,6 +90,8 @@ def main():
         query(sql)
         print('Migração aplicada:', migration.name)
     REPORT['schemaApplied'] = True
+    manual = query("select to_regprocedure('public.mr1_request_order(jsonb,jsonb,uuid)') is not null and to_regprocedure('public.mr1_prepare_manual_payment(uuid,bigint,integer,text,boolean)') is not null and to_regprocedure('public.mr1_report_pix(uuid)') is not null and to_regprocedure('public.mr1_manage_manual_order(uuid,text,text,boolean)') is not null as ready;")
+    REPORT['manualOrdersReady'] = bool(manual and manual[0]['ready'])
 
     REPORT['stage'] = 'auth-configuration'
     auth = request(base + '/config/auth', token)

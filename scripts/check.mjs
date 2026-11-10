@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-const files = ['app.js','account.js','site-editor.js','backend.js','theme.js','config.js','scripts/build.mjs','tests/storefront.cjs'];
+const files = ['app.js','account.js','site-editor.js','backend.js', 'manual-commerce.js','theme.js','config.js','scripts/build.mjs','tests/storefront.cjs'];
 for (const file of files) {
   const result = spawnSync(process.execPath, ['--check', file], { stdio: 'inherit' });
   if (result.status !== 0) process.exit(result.status || 1);

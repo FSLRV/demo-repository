@@ -71,7 +71,34 @@
     return { id: row.id, status: row.status, created: Math.floor(Date.parse(row.created_at) / 1000), subtotal: row.subtotal_cents / 100,
       shipping: row.shipping_cents / 100, total: row.total_cents / 100,
       items: (row.items || []).map((item) => ({ ...item, unitPrice: item.unitPrice / 100 })),
-      ...(details ? { customer: row.customer, shippingService: row.shipping_service } : {}) };
+      manual: row.manual_flow === true, shippingPending: row.shipping_pending === true,
+      pix: row.pix_payload || '', trackingCode: row.tracking_code || '', shippingService: row.shipping_service,
+      ...(details ? { customer: row.customer } : {}) };
+  }
+  async function manualRpc(name, values) {
+    const result = await client().rpc(name, values);
+    if (result.error?.code === '22023') throw problem(422, result.error.message, 'invalid_order');
+    return check(result);
+  }
+  async function shippingOptions(value, signal) {
+    const cep = String(value.cep || '').replace(/\D/g, '');
+    if (!/^\d{8}$/.test(cep) || /^(\d)\1{7}$/.test(cep)) throw problem(422, 'Informe um CEP válido.', 'invalid_cep');
+    let destination;
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`, { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000), credentials: 'omit', referrerPolicy: 'no-referrer' });
+      if (!response.ok) throw new Error('CEP unavailable');
+      destination = await response.json();
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      throw problem(503, 'A consulta de CEP está indisponível. Tente novamente em instantes.', 'cep_unavailable');
+    }
+    if (destination.erro || String(destination.cep || '').replace(/\D/g, '') !== cep || !destination.localidade || !destination.uf) throw problem(422, 'CEP não encontrado. Confira os números.', 'invalid_cep');
+    const capital = destination.ibge === '3550308' && destination.uf === 'SP';
+    return { destination: { cep, street: destination.logradouro || '', neighborhood: destination.bairro || '', city: destination.localidade, state: destination.uf },
+      quotes: [{ id: capital ? 'mr1-capital' : 'correios-counter', company: capital ? 'MR1' : 'Correios',
+        name: capital ? 'Entrega gratuita — São Paulo capital' : 'Postagem na agência', price: 0, pricePending: !capital,
+        deliveryLabel: capital ? 'Prazo confirmado pela loja antes do Pix' : 'Frete e prazo confirmados pela loja antes do Pix',
+        expiresAt: Math.floor(Date.now() / 1000) + 1800 }] };
   }
   async function fallback(file) {
     const response = await fetch(new URL(file, document.baseURI), { cache: 'no-cache' });
@@ -97,8 +124,8 @@
     const url = new URL(path, location.href);
     const pathname = url.pathname;
     if (pathname === '/api/config') return { database: { provider: 'supabase', configured: ready }, preview: !ready,
-      payment: { provider: 'unconfigured', configured: false }, shipping: { provider: 'unconfigured', configured: false, origin: '05879450' },
-      publicUrlConfigured: location.protocol === 'https:', checkoutReady: false };
+      payment: { provider: 'pixmanual', configured: ready, manual: true }, shipping: { provider: 'correios', configured: ready, manual: true, origin: '05879450' },
+      publicUrlConfigured: location.protocol === 'https:', checkoutReady: ready };
     if (pathname === '/api/products' && method === 'GET') {
       if (!ready) return fallback('data/catalog.json');
       return { products: check(await client().from('mr1_products').select('*').order('sort_order').order('created_at').abortSignal(signal || new AbortController().signal)).map(product) };
@@ -158,13 +185,24 @@
     }
     if (pathname === '/api/account/orders' && method === 'GET') {
       const account = await user(true);
-      const rows = check(await client().from('mr1_orders').select('id,status,created_at,subtotal_cents,shipping_cents,total_cents,items').eq('customer_id', account.id).order('created_at', { ascending: false }).limit(100));
+      const rows = check(await client().from('mr1_orders').select('id,status,created_at,subtotal_cents,shipping_cents,total_cents,items,manual_flow,shipping_pending,pix_payload,tracking_code,shipping_service').eq('customer_id', account.id).order('created_at', { ascending: false }).limit(100));
       return { orders: rows.map((row) => order(row)) };
     }
     if (pathname === '/api/admin/orders' && method === 'GET') {
       await requireAdmin();
-      const rows = check(await client().from('mr1_orders').select('id,status,created_at,subtotal_cents,shipping_cents,total_cents,items').order('created_at', { ascending: false }).limit(100));
+      const rows = check(await client().from('mr1_orders').select('id,status,created_at,subtotal_cents,shipping_cents,total_cents,items,manual_flow,shipping_pending,pix_payload,tracking_code,shipping_service').order('created_at', { ascending: false }).limit(100));
       return { orders: rows.map((row) => order(row)) };
+    }
+    const manage = pathname.match(/^\/api\/admin\/orders\/([0-9a-f-]{36})\/(prepare|manage)$/);
+    if (manage && method === 'POST') {
+      await requireAdmin();
+      if (manage[2] === 'prepare') await manualRpc('mr1_prepare_manual_payment', { order_id: manage[1], freight_cents: body.freightCents, delivery_days: body.deliveryDays, pix: body.pix, confirmed: body.confirmed === true });
+      else await manualRpc('mr1_manage_manual_order', { order_id: manage[1], action: body.action, tracking: body.tracking || '', confirmed: body.confirmed === true });
+      return { saved: true };
+    }
+    const report = pathname.match(/^\/api\/account\/orders\/([0-9a-f-]{36})\/report-pix$/);
+    if (report && method === 'POST') {
+      await user(true); await manualRpc('mr1_report_pix', { order_id: report[1] }); return { reported: true };
     }
     const details = pathname.match(/^\/api\/(admin\/orders|account\/orders)\/([0-9a-f-]{32,36})$/);
     if (details && method === 'GET') {
@@ -173,8 +211,11 @@
       if (!row) throw problem(404, 'Pedido não encontrado.', 'order_not_found');
       return { order: order(row, true) };
     }
-    if (pathname === '/api/shipping') throw problem(503, 'O frete online ainda não foi ativado pela loja. Nenhum valor fictício será cobrado.', 'shipping_not_configured');
-    if (pathname === '/api/checkout') throw problem(503, 'O pagamento ainda não foi ativado pela loja. Não houve cobrança.', 'payment_not_configured');
+    if (pathname === '/api/shipping' && method === 'POST') return shippingOptions(body, signal);
+    if (pathname === '/api/checkout' && method === 'POST') {
+      await user(true);
+      return manualRpc('mr1_request_order', { lines: body.items, details: body.customer, request_id: headers['Idempotency-Key'] || headers['idempotency-key'] || null });
+    }
     if (/^\/api\/orders\//.test(pathname)) throw problem(401, 'Entre na sua conta para consultar este pedido.', 'authentication_required');
     throw problem(404, 'Recurso não encontrado.', 'not_found');
   }
