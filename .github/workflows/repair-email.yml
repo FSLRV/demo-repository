@@ -1,0 +1,44 @@
+name: Check and repair owner Gmail settings
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/repair-email.yml
+      - scripts/repair-gmail-settings.py
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mr1-email-settings
+  cancel-in-progress: false
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate SMTP repair rules
+        run: python3 -m unittest discover -s tests -p test_email_settings.py -v
+      - name: Check and repair Gmail public fields for the authorized owner
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: python3 scripts/repair-gmail-settings.py
+      - name: Record safe status
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f "$RUNNER_TEMP/mr1-email-status.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code origin refs/heads/mr1-email-status > /dev/null; then
+            git fetch origin refs/heads/mr1-email-status
+            git switch -C mr1-email-status FETCH_HEAD
+          else
+            git switch --orphan mr1-email-status
+          fi
+          cp "$RUNNER_TEMP/mr1-email-status.json" email-status.json
+          git add email-status.json
+          git commit -m "Record SMTP field check for run $GITHUB_RUN_ID"
+          git push origin HEAD:refs/heads/mr1-email-status
