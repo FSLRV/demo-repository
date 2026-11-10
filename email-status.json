@@ -1,19 +1,30 @@
 {
   "checked": true,
-  "applied": false,
-  "valid": false,
-  "changedFields": [],
-  "error": "gmail_account_needs_confirmation",
+  "applied": true,
+  "valid": true,
+  "changedFields": [
+    "smtp_user"
+  ],
+  "error": null,
   "before": {
     "gmailSelected": true,
     "portSupported": true,
     "usernamePresent": true,
     "senderPresent": true,
     "senderMatchesUsername": false,
-    "senderMatchesOwner": false,
-    "usernameMatchesOwner": false
+    "senderMatchesApprovedAccount": true,
+    "usernameMatchesApprovedAccount": false
   },
-  "createdAt": "2026-11-10T15:49:06.845003+00:00",
-  "commit": "7952dcf0f25a77e0bac581a14ad3426822c0610f",
-  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42848300307"
+  "after": {
+    "gmailSelected": true,
+    "portSupported": true,
+    "usernamePresent": true,
+    "senderPresent": true,
+    "senderMatchesUsername": true,
+    "senderMatchesApprovedAccount": true,
+    "usernameMatchesApprovedAccount": true
+  },
+  "createdAt": "2026-11-10T15:52:47.695222+00:00",
+  "commit": "b0ca2b668abf6854f5a5727d4ad3f9baaa7562ed",
+  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42848943889"
 }
