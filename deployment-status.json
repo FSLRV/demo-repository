@@ -2,9 +2,9 @@
   "commit": "8730f595355255f617e92d9fed04ec88e3d2fdbf",
   "runId": "42837211411",
   "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42837211411",
-  "createdAt": "2026-11-10T14:45:16.983482+00:00",
+  "createdAt": "2026-11-10T14:47:06.676706+00:00",
   "build": "success",
-  "deployment": "pending",
+  "deployment": "success",
   "supabase": {
     "tokenPresent": true,
     "schemaApplied": true,
@@ -15,8 +15,41 @@
     "stage": "complete",
     "error": null
   },
-  "pages": {},
-  "live": {},
+  "pages": {
+    "httpStatus": 200,
+    "buildType": "workflow",
+    "configured": true,
+    "cname": null,
+    "httpsEnforced": false,
+    "certificateState": null,
+    "status": null,
+    "defaultHttpsUpdateStatus": 403,
+    "defaultProbe": {
+      "url": "https://fslrv.github.io/demo-repository/",
+      "addresses": [
+        "185.199.108.153",
+        "185.199.109.153",
+        "185.199.110.153",
+        "185.199.111.153",
+        "2606:50c0:8000::153",
+        "2606:50c0:8001::153",
+        "2606:50c0:8002::153",
+        "2606:50c0:8003::153"
+      ],
+      "httpStatus": 200,
+      "finalOrigin": "https://fslrv.github.io",
+      "storefront": true
+    },
+    "domainHealthStatus": 403
+  },
+  "live": {
+    "live": true,
+    "catalogRead": true,
+    "settingsRead": true,
+    "privateOrdersBlocked": true,
+    "manualStorefront": true,
+    "cepLookup": true
+  },
   "databaseChecks": {
     "ready": true,
     "catalogRead": true,
@@ -24,5 +57,5 @@
     "privateTablesBlocked": true,
     "authAvailable": true
   },
-  "url": ""
+  "url": "http://fslrv.github.io/demo-repository/"
 }
