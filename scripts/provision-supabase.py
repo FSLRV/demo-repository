@@ -57,8 +57,11 @@ def literal(value):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--project-ref', default='tsrhrqwwunjyyujepppn')
-    parser.add_argument('--site-url', default=os.environ.get('MR1_SITE_URL', 'https://fslrv.github.io/demo-repository/'))
+    canonical = ROOT / 'CNAME'
+    default_site = 'https://' + canonical.read_text().strip() + '/' if canonical.exists() else 'https://fslrv.github.io/demo-repository/'
+    parser.add_argument('--site-url', default=os.environ.get('MR1_SITE_URL', default_site))
     parser.add_argument('--exclude-redirect', action='append', default=[])
+    parser.add_argument('--additional-redirect', action='append', default=[])
     parser.add_argument('--admin-email', default=os.environ.get('MR1_ADMIN_EMAIL', ''))
     parser.add_argument('--skip-admin', action='store_true')
     parser.add_argument('--existing-admin-only', action='store_true')
@@ -67,8 +70,13 @@ def main():
     args = parser.parse_args()
     if not re.fullmatch(r'[a-z0-9]{20}', args.project_ref):
         parser.error('Project ref inválido.')
-    if not args.site_url.startswith('https://'):
-        parser.error('O site precisa de URL HTTPS.')
+    site = urlparse(args.site_url)
+    if site.scheme != 'https' or not site.hostname or site.username or site.password or site.query or site.fragment:
+        parser.error('O site precisa de URL HTTPS sem credenciais, query ou fragmento.')
+    for redirect in args.additional_redirect:
+        parsed = urlparse(redirect)
+        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            parser.error('Informe retornos adicionais como URLs HTTPS sem credenciais, query ou fragmento.')
     if not args.skip_admin and not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', args.admin_email):
         parser.error('Informe --admin-email com o e-mail do responsável.')
     token = os.environ.get('SUPABASE_ACCESS_TOKEN', '')
@@ -108,9 +116,17 @@ def main():
         raise RuntimeError('O endereço ativo não pode ser excluído dos retornos de login.')
     redirects = {s for s in redirects if s.rstrip('/') not in excluded}
     redirects.add(args.site_url)
-    request(base + '/config/auth', token, {'site_url': args.site_url, 'uri_allow_list': ','.join(sorted(redirects)),
+    redirects.update(args.additional_redirect)
+    applied_auth = request(base + '/config/auth', token, {'site_url': args.site_url, 'uri_allow_list': ','.join(sorted(redirects)),
                                           'external_email_enabled': True, 'mailer_autoconfirm': False,
                                           'password_min_length': 12}, 'PATCH')
+    if not isinstance(applied_auth, dict) or 'site_url' not in applied_auth:
+        applied_auth = request(base + '/config/auth', token)
+    actual_redirects = {value.strip() for value in str(applied_auth.get('uri_allow_list', '')).split(',') if value.strip()}
+    if applied_auth.get('site_url') != args.site_url or not {args.site_url, *args.additional_redirect}.issubset(actual_redirects):
+        raise RuntimeError('O Supabase não confirmou o endereço e os retornos de login solicitados.')
+    REPORT['authSiteUrl'] = args.site_url
+    REPORT['authRedirectsConfigured'] = True
     REPORT['authConfigured'] = True
     REPORT['stage'] = 'public-configuration'
     keys = request(base + '/api-keys', token)

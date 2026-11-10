@@ -13,10 +13,11 @@ test('Pages publica apenas arquivos públicos e funciona no subdiretório do rep
   assert.equal(result.status, 0, result.stderr);
   const files = await readdir('_site');
   for (const name of ['server.py','customers.py','site_settings.py','.env','.env.example','.git','tests','supabase','node_modules','scripts']) assert.ok(!files.includes(name), name);
-  for (const name of ['index.html','app.js','backend.js','manual-commerce.js','supabase-sdk.js','account.js','site-editor.js','config.js','theme.css','.nojekyll']) assert.ok(files.includes(name), name);
+  for (const name of ['CNAME','index.html','app.js','backend.js','manual-commerce.js','supabase-sdk.js','account.js','site-editor.js','config.js','theme.css','.nojekyll']) assert.ok(files.includes(name), name);
   const html = await readFile('_site/index.html','utf8');
   assert.ok(!/(?:src|href)=["']\/(?:assets|app|styles|config|account|theme|site-editor)/.test(html), 'Assets precisam de caminhos relativos ao projeto Pages');
   assert.ok(html.includes('id="account-button"') && html.includes('id="site-editor-section"'));
+  assert.equal((await readFile('_site/CNAME','utf8')).trim(),'mr1storesp.com.br');
   const cfg = await readFile('_site/config.js','utf8');
   assert.ok(!cfg.includes('service_role') && !cfg.includes('sb_secret_'));
 });

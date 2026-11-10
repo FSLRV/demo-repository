@@ -29,8 +29,6 @@ jobs:
         id: supabase
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          MR1_USE_DEFAULT_PAGES: ${{ vars.MR1_PAGES_USE_CUSTOM_DOMAIN != 'true' }}
-          MR1_SITE_URL: ${{ vars.MR1_PAGES_USE_CUSTOM_DOMAIN == 'true' && 'https://mr1streetsp.com.br/' || 'https://fslrv.github.io/demo-repository/' }}
           MR1_BOOTSTRAP_ADMIN_SHA256: 4d8b7b65401db391b2a6f5a5f4eabe5aa42a8307d6bf726d66d874592697240d
         run: python3 scripts/run-provision-ci.py
       - name: Verify online database access
@@ -82,7 +80,6 @@ jobs:
         id: preflight
         env:
           PAGES_TOKEN: ${{ secrets.PAGES_ADMIN_TOKEN || github.token }}
-          MR1_USE_DEFAULT_PAGES: ${{ vars.MR1_PAGES_USE_CUSTOM_DOMAIN != 'true' }}
         run: python3 scripts/pages-preflight.py
       - name: Configure Pages
         id: pages

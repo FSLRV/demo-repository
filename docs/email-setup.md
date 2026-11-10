@@ -1,6 +1,6 @@
 # Enviar confirmações de cadastro da MR1
 
-O Supabase exige confirmação de e-mail para entrar na conta. O envio padrão é restrito; configure SMTP próprio para receber cadastros de clientes externos. O site já está publicado em https://fslrv.github.io/demo-repository/.
+O Supabase exige confirmação de e-mail para entrar na conta. O envio padrão é restrito; configure SMTP próprio para receber cadastros de clientes externos. O novo endereço da loja é https://mr1storesp.com.br/, após ativar DNS e HTTPS. Durante a configuração, use https://fslrv.github.io/demo-repository/.
 
 Para os primeiros testes, é possível usar o Gmail escolhido pelo responsável para enviar as confirmações. A senha normal do Gmail não deve ser utilizada no Supabase.
 

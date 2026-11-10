@@ -2,7 +2,7 @@
 
 Loja MR1 com catálogo, sacola, pedidos por Pix manual e atendimento pelo painel. Supabase fornece Auth (clientes e administradores), PostgreSQL com regras de acesso por usuário, favoritos, histórico de pedidos, imagens e configurações visuais. Não há servidor Python na publicação do GitHub Pages.
 
-Repositório: **FSLRV/demo-repository**. Domínio escolhido para o futuro: **https://mr1streetsp.com.br/**. Enquanto ele não é registrado, o endereço de publicação para testes é **https://fslrv.github.io/demo-repository/**. O endereço só fica ativo depois que a configuração Pages e o workflow de publicação tiverem sucesso.
+Repositório: **FSLRV/demo-repository**. Domínio comprado no Registro.br: **https://mr1storesp.com.br/**. A ativação depende do DNS, da configuração do GitHub Pages e da emissão de HTTPS. O endereço temporário é **https://fslrv.github.io/demo-repository/**.
 
 Projeto Supabase selecionado: **https://tsrhrqwwunjyyujepppn.supabase.co**.
 
@@ -12,21 +12,25 @@ Edite os arquivos na branch `main` e faça commit. O workflow **Publish MR1 to G
 
 Em **Settings → Pages**, selecione **Source: GitHub Actions**. Se Pages ainda não estiver habilitado, a ativação requer uma conta com permissão sobre as configurações do repositório. O `GITHUB_TOKEN` do workflow não concede automaticamente essa permissão; o workflow aceita opcionalmente o secret `PAGES_ADMIN_TOKEN` com as permissões apropriadas.
 
-### Domínio próprio escolhido
+### Domínio comprado: mr1storesp.com.br
 
-O responsável escolheu manter `mr1streetsp.com.br`. Esse domínio precisa estar registrado e apontar para GitHub Pages no provedor de DNS. Para o domínio raiz, o GitHub documenta estes registros:
+O arquivo `CNAME` define o domínio usado pela publicação e pelo Supabase Auth. O workflow verifica os registros públicos e tenta associar esse domínio ao Pages quando o DNS já aponta para o GitHub. Se a API responder HTTP 403, a associação deve ser feita na conta proprietária em [Settings → Pages → Custom domain](https://github.com/FSLRV/demo-repository/settings/pages).
 
-| Tipo | Nome/host | Destino |
+No Registro.br, abra **Domínios → mr1storesp.com.br → DNS → Configurar endereçamento → Modo avançado** e configure:
+
+| Tipo | Nome/host no Registro.br | Destino |
 | --- | --- | --- |
-| A | @ (raiz) | 185.199.108.153 |
-| A | @ (raiz) | 185.199.109.153 |
-| A | @ (raiz) | 185.199.110.153 |
-| A | @ (raiz) | 185.199.111.153 |
+| A | Em branco (raiz) | 185.199.108.153 |
+| A | Em branco (raiz) | 185.199.109.153 |
+| A | Em branco (raiz) | 185.199.110.153 |
+| A | Em branco (raiz) | 185.199.111.153 |
 | CNAME | www | fslrv.github.io |
 
-No momento, a automação remove o redirecionamento para o domínio ainda não registrado, permitindo testar pelo endereço gratuito do GitHub. Depois de registrar o domínio e configurar o DNS, defina a variável de repositório `MR1_PAGES_USE_CUSTOM_DOMAIN=true` e configure **Settings → Pages → Custom domain** como `mr1streetsp.com.br`. Após a emissão do certificado, habilite **Enforce HTTPS**. Registros de e-mail e outros serviços não precisam ser alterados.
+Substitua registros A de estacionamento da raiz. Preserve os registros de e-mail; o SMTP Gmail da loja continua sendo usado. Em GitHub **Custom domain**, salve `mr1storesp.com.br` e habilite **Enforce HTTPS** assim que o certificado estiver disponível. A alteração de DNS pode levar algumas horas; o relatório diferencia DNS pendente, permissão insuficiente e HTTPS confirmado.
 
-Durante o teste temporário, o retorno do Supabase Auth usa `https://fslrv.github.io/demo-repository/`. Redirecionamentos para o domínio não registrado são retirados até que ele pertença ao responsável. Ao ativar a variável do domínio próprio, a automação configura o retorno HTTPS correspondente.
+O Supabase passa a usar `https://mr1storesp.com.br/` como Site URL e aceita retornos HTTPS do domínio raiz, de `www.mr1storesp.com.br` e do endereço temporário GitHub. O candidato anterior `mr1streetsp.com.br`, que não foi adquirido, é retirado dos retornos autorizados. Os dados, contas e permissões existentes são mantidos; no novo endereço, entre novamente com a mesma conta.
+
+A variável antiga `MR1_PAGES_USE_CUSTOM_DOMAIN` não controla mais o deploy: o domínio vem do `CNAME`, para que uma publicação futura não volte ao candidato anterior. Alterações no domínio devem ser feitas no `CNAME`, no Pages e no DNS; a próxima publicação atualiza os retornos do Auth.
 
 ## Conectar e configurar o Supabase
 

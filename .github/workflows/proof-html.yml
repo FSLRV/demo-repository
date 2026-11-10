@@ -25,6 +25,7 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: python3 -m unittest discover -s tests -p test_provision.py -v
+      - run: python3 -m unittest discover -s tests -p test_domain.py -v
       - run: python3 -m unittest discover -s tests -p test_email_settings.py -v
       - run: npm run test:database
         env:

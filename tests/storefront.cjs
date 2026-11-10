@@ -23,7 +23,7 @@ function fromToken(header) {
   try { return JSON.parse(Buffer.from(header.split(' ')[1].split('.')[1], 'base64url')); } catch { return null; }
 }
 
-async function mockSupabase(context) {
+async function mockSupabase(context, expectedRedirect) {
   const products = JSON.parse(await fs.readFile('data/catalog.json','utf8')).products.map((p,n)=>({ ...p,old_price:p.oldPrice,measurements_confirmed:p.measurementsConfirmed,sort_order:n,created_at:new Date().toISOString() }));
   let settings = JSON.parse(await fs.readFile('data/site-settings.json','utf8')).settings;
   const favorites = new Set();
@@ -48,7 +48,7 @@ async function mockSupabase(context) {
     }
     if(url.pathname==='/auth/v1/resend') {
       assert.equal(body.type,'signup');
-      assert.ok(url.searchParams.get('redirect_to')?.endsWith('/demo-repository/'));
+      assert.equal(url.searchParams.get('redirect_to'),expectedRedirect);
       if(body.email==='rate@example.test') return json({code:'over_email_send_rate_limit',msg:'email rate limit exceeded'},429);
       if(body.email==='smtp-fail@example.test') return json({code:'unexpected_failure',msg:'Error sending confirmation email: fixture-private-provider-details'},500);
       confirmationRequests.push(body.email);return json({});
@@ -121,13 +121,14 @@ async function mockSupabase(context) {
     try {const data=await fs.readFile(file);res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});res.end(data);} catch {res.writeHead(404).end();}
   });
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
-  const address=`http://127.0.0.1:${server.address().port}/demo-repository/`;
+  const origin=`http://127.0.0.1:${server.address().port}/`;
   const executable=process.env.BROWSER_BIN || (await fs.access('/usr/bin/chromium').then(()=>'/usr/bin/chromium').catch(()=>undefined));
   const browser=await chromium.launch({executablePath:executable,headless:true,args:['--no-sandbox']});
   try {
-    for(const width of [1440,390]) {
+    for(const {width,prefix} of [{width:1440,prefix:'demo-repository/'},{width:390,prefix:''}]) {
+      const address=origin+prefix;
       const context=await browser.newContext({viewport:{width,height:950}});
-      const fixture=await mockSupabase(context);
+      const fixture=await mockSupabase(context,address);
       const page=await context.newPage();const errors=[];
       page.on('pageerror',e=>errors.push(e.message));
       await page.goto(address,{waitUntil:'networkidle'});
@@ -224,7 +225,7 @@ async function mockSupabase(context) {
       assert.deepEqual(errors,[]);
       await fs.mkdir('/tmp/mr1-manual-preview',{recursive:true});
       await page.screenshot({path:`/tmp/mr1-manual-preview/orders-${width}.png`,fullPage:true});
-      console.log(`PASS UI ${width}px: primeiro acesso, confirmação/reenvio, erros de e-mail, conta, favoritos, capital grátis, CEP inválido, Correios sob consulta, pedido, Pix manual, confirmação, rastreio e edição da loja.`);
+      console.log(`PASS UI ${width}px (${prefix || 'raiz do domínio'}): primeiro acesso, confirmação/reenvio, erros de e-mail, conta, favoritos, capital grátis, CEP inválido, Correios sob consulta, pedido, Pix manual, confirmação, rastreio e edição da loja.`);
       await context.close();
     }
   } finally {await browser.close();await new Promise(r=>server.close(r));}

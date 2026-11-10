@@ -5,16 +5,18 @@ import os
 import re
 import time
 from urllib.error import HTTPError, URLError
-from urllib.parse import urljoin
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
 
 site=os.environ['PAGES_URL'].rstrip('/')+'/'
-result={'live':False,'catalogRead':False,'settingsRead':False,'privateOrdersBlocked':False,'manualStorefront':False,'cepLookup':False}
+result={'live':False,'catalogRead':False,'settingsRead':False,'privateOrdersBlocked':False,'manualStorefront':False,'cepLookup':False,'customDomainReady':False}
 try:
     for attempt in range(8):
         try:
             with urlopen(site+'?deployment='+os.environ['GITHUB_RUN_ID'],timeout=20) as response:
                 html=response.read().decode()
+                actual_url=response.geturl()
             if 'manual-commerce.js' in html and 'account-dialog' in html: break
         except (HTTPError,URLError): pass
         time.sleep(5)
@@ -50,6 +52,18 @@ try:
             raise RuntimeError('A consulta de CEP não confirmou os municípios esperados.')
     result['cepLookup']=True
     result['live']=True
+    result['activeOrigin']=urlparse(actual_url).scheme+'://'+str(urlparse(actual_url).hostname)
+    canonical=Path('CNAME')
+    if canonical.exists():
+        domain=canonical.read_text().strip()
+        result['desiredDomain']=domain
+        try:
+            with urlopen('https://'+domain+'/',timeout=15) as response:
+                secure_html=response.read(262144).decode('utf-8',errors='replace')
+                secure_origin=urlparse(response.geturl())
+            result['customDomainReady']='account-dialog' in secure_html and 'backend.js' in secure_html and secure_origin.scheme=='https' and secure_origin.hostname==domain
+        except (HTTPError,URLError,TimeoutError,OSError) as error:
+            result['customDomainPending']=type(error).__name__
     print('Site e leitura pública Supabase verificados; pedidos privados bloqueados.')
 except Exception as error:
     # Do not persist server bodies or credentials from request objects.

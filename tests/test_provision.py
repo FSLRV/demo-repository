@@ -36,8 +36,14 @@ class ProvisionTests(unittest.TestCase):
             if url.endswith('/config/auth'):
                 if method=='PATCH':
                     self.assertIn('https://previous.example.test',payload['uri_allow_list'])
+                    self.assertEqual(payload['site_url'],'https://mr1storesp.com.br/')
+                    self.assertIn('https://www.mr1storesp.com.br/',payload['uri_allow_list'])
+                    self.assertIn('https://fslrv.github.io/demo-repository/',payload['uri_allow_list'])
+                    self.assertNotIn('smtp_user',payload)
+                    self.assertNotIn('smtp_pass',payload)
                     self.assertNotIn('https://mr1streetsp.com.br',payload['uri_allow_list'])
                     self.assertFalse(payload['mailer_autoconfirm'])
+                    return payload
                 return {'uri_allow_list':'https://previous.example.test,https://mr1streetsp.com.br/','smtp_host':'smtp.gmail.com','smtp_admin_email':'owner@example.test','smtp_user':'owner@example.test','smtp_port':465,'smtp_pass':'fixture-smtp-password-never-log'}
             if url.endswith('/api-keys'): return [{'name':'anon','api_key':key},{'name':'service_role','api_key':private}]
             self.fail(url)
@@ -46,7 +52,7 @@ class ProvisionTests(unittest.TestCase):
             (root/'supabase/migrations/001.sql').write_text('select 1;')
             helper.ROOT=root
             logs=io.StringIO()
-            with patch.dict(os.environ,{'SUPABASE_ACCESS_TOKEN':'fixture-pac'}), patch('sys.argv',['provision','--skip-admin','--bootstrap-admin-hash','0'*64,'--exclude-redirect','https://mr1streetsp.com.br/']), patch.object(helper,'request',side_effect=request), redirect_stdout(logs):
+            with patch.dict(os.environ,{'SUPABASE_ACCESS_TOKEN':'fixture-pac'}), patch('sys.argv',['provision','--site-url','https://mr1storesp.com.br/','--additional-redirect','https://www.mr1storesp.com.br/','--additional-redirect','https://fslrv.github.io/demo-repository/','--skip-admin','--bootstrap-admin-hash','0'*64,'--exclude-redirect','https://mr1streetsp.com.br/']), patch.object(helper,'request',side_effect=request), redirect_stdout(logs):
                 helper.main()
             config=(root/'config.js').read_text()
             self.assertIn(key,config)
@@ -54,6 +60,8 @@ class ProvisionTests(unittest.TestCase):
             self.assertNotIn('fixture-pac',config)
             self.assertNotIn(key,logs.getvalue())
             self.assertTrue(helper.REPORT['schemaApplied'])
+            self.assertEqual(helper.REPORT['authSiteUrl'],'https://mr1storesp.com.br/')
+            self.assertTrue(helper.REPORT['authRedirectsConfigured'])
             self.assertTrue(helper.REPORT['ownerReady'])
             self.assertTrue(helper.REPORT['ownerAccountExists'])
             self.assertTrue(helper.REPORT['ownerEmailConfirmed'])
