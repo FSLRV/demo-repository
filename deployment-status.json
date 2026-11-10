@@ -2,9 +2,9 @@
   "commit": "d9ee9bb6b8e87b3c854ddc718f0a8672a3d0b8f7",
   "runId": "42854956120",
   "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42854956120",
-  "createdAt": "2026-11-10T16:29:26.585443+00:00",
+  "createdAt": "2026-11-10T16:30:28.069374+00:00",
   "build": "success",
-  "deployment": "pending",
+  "deployment": "failure",
   "supabase": {
     "tokenPresent": true,
     "schemaApplied": true,
@@ -22,8 +22,74 @@
     "stage": "complete",
     "error": null
   },
-  "pages": {},
-  "live": {},
+  "pages": {
+    "desiredDomain": "mr1storesp.com.br",
+    "domainDns": {
+      "addresses": [],
+      "pointsToGitHub": false,
+      "error": "DNS ainda n\u00e3o resolvido"
+    },
+    "wwwDns": {
+      "addresses": [],
+      "pointsToGitHub": false,
+      "error": "DNS ainda n\u00e3o resolvido"
+    },
+    "registration": {
+      "httpStatus": 200,
+      "nameservers": [
+        "a.auto.dns.br",
+        "b.auto.dns.br"
+      ]
+    },
+    "httpStatus": 200,
+    "configured": true,
+    "buildType": "workflow",
+    "cname": "mr1storesp.com.br",
+    "httpsEnforced": false,
+    "certificateState": null,
+    "status": null,
+    "httpsProbe": {
+      "url": "https://mr1storesp.com.br/",
+      "addresses": [],
+      "error": "DNS sem endere\u00e7o p\u00fablico"
+    },
+    "httpProbe": {
+      "url": "http://mr1storesp.com.br/",
+      "addresses": [],
+      "error": "DNS sem endere\u00e7o p\u00fablico"
+    },
+    "wwwProbe": {
+      "url": "https://www.mr1storesp.com.br/",
+      "addresses": [],
+      "error": "DNS sem endere\u00e7o p\u00fablico"
+    },
+    "customDomainReady": false,
+    "defaultProbe": {
+      "url": "https://fslrv.github.io/demo-repository/",
+      "addresses": [
+        "185.199.108.153",
+        "185.199.109.153",
+        "185.199.110.153",
+        "185.199.111.153",
+        "2606:50c0:8000::153",
+        "2606:50c0:8001::153",
+        "2606:50c0:8002::153",
+        "2606:50c0:8003::153"
+      ],
+      "error": "URLError"
+    },
+    "domainHealthStatus": 403
+  },
+  "live": {
+    "live": false,
+    "catalogRead": false,
+    "settingsRead": false,
+    "privateOrdersBlocked": false,
+    "manualStorefront": false,
+    "cepLookup": false,
+    "customDomainReady": false,
+    "error": "O site ainda n\u00e3o respondeu com a vers\u00e3o publicada."
+  },
   "databaseChecks": {
     "ready": true,
     "catalogRead": true,
@@ -31,5 +97,5 @@
     "privateTablesBlocked": true,
     "authAvailable": true
   },
-  "url": ""
+  "url": "http://mr1storesp.com.br/"
 }
