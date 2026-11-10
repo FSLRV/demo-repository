@@ -58,7 +58,7 @@ class DomainTests(unittest.TestCase):
                 raise URLError('certificate pending')
             return Response('account-dialog backend.js', url)
 
-        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'FSLRV/demo-repository', 'PAGES_TOKEN': 'fixture-secret-token'}), patch.object(helper.socket, 'getaddrinfo', side_effect=resolve), patch.object(helper, 'urlopen', side_effect=request):
+        with patch.dict(os.environ, {'GITHUB_REPOSITORY': 'FSLRV/demo-repository', 'PAGES_TOKEN': 'fixture-secret-token'}), patch.object(helper.socket, 'getaddrinfo', side_effect=resolve), patch.object(helper, 'urlopen', side_effect=request), patch.object(helper, 'authoritative_dns', return_value={'available': False}):
             result = helper.main()
         self.assertNotIn('fixture-secret-token', json.dumps(result))
         self.assertNotIn('must-not-report', json.dumps(result))

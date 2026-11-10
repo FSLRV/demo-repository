@@ -4,7 +4,10 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import socket
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -63,6 +66,40 @@ def registration(domain):
         return {'error': type(error).__name__}
 
 
+def authoritative_dns(domain, nameservers):
+    if not shutil.which('dig'):
+        return {'available': False}
+    servers = [server for server in nameservers if isinstance(server, str) and re.fullmatch(r'[a-zA-Z0-9.-]+', server)][:2]
+    expected = os.environ['GITHUB_REPOSITORY'].split('/', 1)[0].lower() + '.github.io'
+
+    def query(item):
+        server, name, record_type = item
+        observed = {'server': server, 'name': name, 'type': record_type, 'values': []}
+        try:
+            process = subprocess.run(['dig', '+time=3', '+tries=1', '+norecurse', '+noall', '+answer', '+comments',
+                                      '@' + server, name, record_type], capture_output=True, text=True, timeout=6)
+            status = re.search(r'\bstatus: ([A-Z]+)', process.stdout)
+            observed['status'] = status[1] if status else 'query_failed'
+            for line in process.stdout.splitlines():
+                fields = line.split()
+                if len(fields) == 5 and fields[0].rstrip('.').lower() == name and fields[2:4] == ['IN', record_type]:
+                    value = fields[4].rstrip('.').lower()
+                    if record_type == 'A':
+                        value = str(ipaddress.IPv4Address(value))
+                    observed['values'].append(value)
+        except (OSError, subprocess.TimeoutExpired, ValueError):
+            observed['status'] = 'query_failed'
+        return observed
+
+    questions = [(server, name, kind) for server in servers for name, kind in [(domain, 'A'), ('www.' + domain, 'CNAME')]]
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        records = list(executor.map(query, questions))
+    correct = bool(servers) and all(record['status'] == 'NOERROR' and
+        (set(record['values']) == {value for value in GITHUB_ADDRESSES if ':' not in value} if record['type'] == 'A'
+         else record['values'] == [expected]) for record in records)
+    return {'available': True, 'recordsCorrect': correct, 'records': records}
+
+
 def main():
     canonical = ROOT / 'CNAME'
     desired = canonical.read_text().strip().lower() if canonical.exists() else ''
@@ -73,6 +110,8 @@ def main():
         result['domainDns'] = dns(desired)
         result['wwwDns'] = dns('www.' + desired)
         result['registration'] = registration(desired)
+        result['authoritativeDns'] = authoritative_dns(desired, result['registration'].get('nameservers', []))
+        result['dnsPropagationPending'] = result['authoritativeDns'].get('recordsCorrect', False) and not result['domainDns']['pointsToGitHub']
     try:
         data = api()
         result.update(httpStatus=200, configured=True)
