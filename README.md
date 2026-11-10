@@ -45,7 +45,7 @@ Enquanto faltar a chave pública, a página mostra o catálogo de prévia e info
 
 ## Administrador e clientes
 
-Clientes usam **Minha conta** no cabeçalho para criar conta, entrar, guardar favoritos e ver seus pedidos. A confirmação de cadastro depende do Auth/SMTP configurado no projeto Supabase. Não há senhas padrão.
+Clientes usam **Minha conta** no cabeçalho para criar conta, entrar, guardar favoritos e ver seus pedidos. A confirmação de cadastro depende do Auth/SMTP configurado no projeto Supabase. Não há senhas padrão. Crie e confirme a conta do responsável antes de entrar em **Gerenciar loja**. Para cadastros de clientes externos, configure um provedor de envio em **Supabase → Authentication → Email → SMTP Settings**: o envio padrão do Supabase é restrito e não substitui SMTP para uma loja pública. O relatório de publicação informa somente se o SMTP próprio está configurado, sem expor credenciais.
 
 A publicação prepara a autorização do e-mail administrativo informado pelo responsável. O banco guarda apenas seu digest: essa conta recebe a permissão uma única vez, após confirmar o e-mail pelo Supabase. Cadastro de outro endereço, metadados de perfil ou e-mail não confirmado não concedem acesso ao painel.
 

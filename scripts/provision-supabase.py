@@ -95,6 +95,7 @@ def main():
 
     REPORT['stage'] = 'auth-configuration'
     auth = request(base + '/config/auth', token)
+    REPORT['customEmailConfigured'] = bool(auth.get('smtp_host') and auth.get('smtp_admin_email'))
     redirects = {s.strip() for s in str(auth.get('uri_allow_list', '')).split(',') if s.strip()}
     excluded = {s.rstrip('/') for s in args.exclude_redirect}
     if args.site_url.rstrip('/') in excluded:
