@@ -13,14 +13,14 @@ OWNER = 'owner@example.test'
 
 class EmailSettingsTests(unittest.TestCase):
     def setUp(self):
-        self.digest = patch.object(helper, 'OWNER_HASH', helper.hashlib.sha256(OWNER.encode()).hexdigest())
+        self.digest = patch.object(helper, 'SMTP_ACCOUNT_HASH', helper.hashlib.sha256(OWNER.encode()).hexdigest())
         self.digest.start()
         self.addCleanup(self.digest.stop)
 
     def test_mismatched_user_and_port_are_corrected_without_changing_password(self):
         # Use a real Gmail-shaped fixture and an isolated digest for this test.
         email = 'fixture@gmail.com'
-        with patch.object(helper, 'OWNER_HASH', helper.hashlib.sha256(email.encode()).hexdigest()):
+        with patch.object(helper, 'SMTP_ACCOUNT_HASH', helper.hashlib.sha256(email.encode()).hexdigest()):
             config = {'smtp_host': 'smtp.gmail.com', 'smtp_admin_email': email, 'smtp_user': 'wrong', 'smtp_port': 25, 'smtp_pass': 'fixture-private-password'}
             changes, error = helper.plan(config)
             self.assertIsNone(error)
@@ -36,7 +36,7 @@ class EmailSettingsTests(unittest.TestCase):
 
     def test_valid_gmail_settings_do_not_trigger_an_update(self):
         email = 'fixture@gmail.com'
-        with patch.object(helper, 'OWNER_HASH', helper.hashlib.sha256(email.encode()).hexdigest()):
+        with patch.object(helper, 'SMTP_ACCOUNT_HASH', helper.hashlib.sha256(email.encode()).hexdigest()):
             config = {'smtp_host': 'smtp.gmail.com', 'smtp_admin_email': email, 'smtp_user': email, 'smtp_port': 587}
             self.assertEqual(helper.plan(config), ({}, None))
 
@@ -44,7 +44,7 @@ class EmailSettingsTests(unittest.TestCase):
         email = 'fixture@gmail.com'
         initial = {'smtp_host': 'smtp.gmail.com', 'smtp_admin_email': email, 'smtp_user': 'wrong', 'smtp_port': 465, 'smtp_pass': 'fixture-private-password'}
         final = {**initial, 'smtp_user': email}
-        with patch.object(helper, 'OWNER_HASH', helper.hashlib.sha256(email.encode()).hexdigest()), patch.dict(os.environ, {'SUPABASE_ACCESS_TOKEN': 'fixture-management-token'}), patch.object(helper, 'request_config', side_effect=[initial, {}, final]) as request:
+        with patch.object(helper, 'SMTP_ACCOUNT_HASH', helper.hashlib.sha256(email.encode()).hexdigest()), patch.dict(os.environ, {'SUPABASE_ACCESS_TOKEN': 'fixture-management-token'}), patch.object(helper, 'request_config', side_effect=[initial, {}, final]) as request:
             report = helper.main()
         self.assertTrue(report['valid'])
         self.assertEqual(report['changedFields'], ['smtp_user'])
