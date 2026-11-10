@@ -1,0 +1,19 @@
+{
+  "checked": true,
+  "applied": false,
+  "valid": false,
+  "changedFields": [],
+  "error": "gmail_account_needs_confirmation",
+  "before": {
+    "gmailSelected": true,
+    "portSupported": true,
+    "usernamePresent": true,
+    "senderPresent": true,
+    "senderMatchesUsername": false,
+    "senderMatchesOwner": false,
+    "usernameMatchesOwner": false
+  },
+  "createdAt": "2026-11-10T15:49:06.845003+00:00",
+  "commit": "7952dcf0f25a77e0bac581a14ad3426822c0610f",
+  "runUrl": "https://github.com/FSLRV/demo-repository/actions/runs/42848300307"
+}
