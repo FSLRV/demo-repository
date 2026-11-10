@@ -6,7 +6,7 @@ Para os primeiros testes, é possível usar o Gmail administrativo informado pel
 
 ## 1. Preparar a conta Google
 
-1. Entre na conta **filipe.desarodrigues.9@gmail.com**.
+1. Entre na conta **seu Gmail administrativo**.
 2. Ative a [verificação em duas etapas](https://myaccount.google.com/signinoptions/two-step-verification), se ainda não estiver ativa.
 3. Abra [Senhas de app](https://myaccount.google.com/apppasswords).
 4. Crie uma senha de app com o nome **MR1 Supabase**. O Google fornece uma senha de 16 caracteres. Guarde-a apenas nas configurações SMTP do Supabase; não envie pelo chat, não use em `config.js`, não faça commit no GitHub.
@@ -19,14 +19,14 @@ Abra [SMTP do projeto MR1](https://supabase.com/dashboard/project/tsrhrqwwunjyyu
 
 | Campo | Valor |
 | --- | --- |
-| Sender email address | `filipe.desarodrigues.9@gmail.com` |
+| Sender email address | `seu-email@gmail.com` |
 | Sender name | `MR1 streetwear` |
 | Host | `smtp.gmail.com` |
 | Port | `465` |
-| Username | `filipe.desarodrigues.9@gmail.com` |
+| Username | `seu-email@gmail.com` |
 | Password | A senha de app gerada no Google, sem espaços |
 
-Mantenha a conexão segura/TLS e salve. A senha fica no Supabase, não no navegador da loja nem no GitHub Pages. Esta etapa não exige outro token de acesso do Supabase. O Gmail tem limites de envio; para ampliar o volume da loja, utilize um provedor de e-mail transacional e um domínio verificado.
+Substitua `seu-email@gmail.com` pelo Gmail administrativo informado no atendimento, em todos os campos de e-mail e usuário. Mantenha a conexão segura/TLS e salve. A senha fica no Supabase, não no navegador da loja nem no GitHub Pages. Esta etapa não exige outro token de acesso do Supabase. O Gmail tem limites de envio; para ampliar o volume da loja, utilize um provedor de e-mail transacional e um domínio verificado.
 
 ## 3. Confirmar o primeiro acesso
 
